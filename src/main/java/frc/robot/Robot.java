@@ -24,12 +24,12 @@ public class Robot extends TimedRobot {
 
   //private final Subsystems my_subsystem = new Subsystems();
   private final WPI_TalonFX shooter_motor1 = new WPI_TalonFX(7);
-  private final WPI_TalonFX shooter_motor2 = new WPI_TalonFX(9);
+  private final WPI_TalonFX shooter_motor2 = new WPI_TalonFX(8);
 
-  private final WPI_TalonFX driver_leftmotor1 = new WPI_TalonFX(4);
-  private final WPI_TalonFX driver_leftmotor2 = new WPI_TalonFX(5);
-  private final WPI_TalonFX driver_rightmotor1 = new WPI_TalonFX(2);
-  private final WPI_TalonFX driver_rightmotor2 = new WPI_TalonFX(3);
+  private final WPI_TalonFX driver_leftmotor1 = new WPI_TalonFX(2);
+  private final WPI_TalonFX driver_leftmotor2 = new WPI_TalonFX(3);
+  private final WPI_TalonFX driver_rightmotor1 = new WPI_TalonFX(4);
+  private final WPI_TalonFX driver_rightmotor2 = new WPI_TalonFX(5);
   private final WPI_TalonFX climber_motor1 = new WPI_TalonFX(14);
   private final WPI_TalonFX climber_motor2 = new WPI_TalonFX(15);
 
