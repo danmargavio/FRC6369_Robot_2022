@@ -34,7 +34,7 @@ public class Robot extends TimedRobot {
   private final WPI_TalonFX climber_motor2 = new WPI_TalonFX(15);
 
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
-  private final WPI_TalonFX intake_motor2 = new WPI_TalonFX(20);
+  private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
 
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
@@ -56,7 +56,7 @@ public class Robot extends TimedRobot {
     climber_motor2.configFactoryDefault();
 
     intake_motor1.configFactoryDefault();
-    intake_motor2.configFactoryDefault();
+    conveyer1.configFactoryDefault();
 
     //Shooter and Driver Inverse 
     shooter_motor2.setInverted(true);
