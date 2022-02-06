@@ -39,7 +39,7 @@ public class Robot extends TimedRobot {
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
   private final Joystick copilot_joystick = new Joystick(1);
-  DifferentialDrive tarzan_robot;
+  DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
   
   @Override
   public void robotInit() {
@@ -88,7 +88,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
         //Tank Drive
-        tarzan_robot.tankDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
+        tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
 
         //Climb
         //climber_motor1.set(0.5*driver_joystick.getRawAxis(5));
