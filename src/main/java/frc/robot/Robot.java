@@ -64,11 +64,13 @@ public class Robot extends TimedRobot {
     intake_motor1.configFactoryDefault();
     conveyer1.configFactoryDefault();
 
-    //Shooter and Driver Inverse 
+    //Mechanism Inversion settings 
     shooter_motor2.setInverted(true);
     driver_rightmotor1.setInverted(true);
     driver_rightmotor2.setInverted(true);
     climber_motor2.setInverted(true);
+    conveyer1.setInverted(true);
+    intake_motor1.setInverted(true);
 
     //Shooter and Driver Follow
     shooter_motor2.follow(shooter_motor1);
