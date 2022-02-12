@@ -36,6 +36,12 @@ public class Robot extends TimedRobot {
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
 
+  // Left trigger = intake in
+  // left bumper = intake out
+  // right trigger = shooter out
+  // Y button = conveyer in
+  // B button = conveyer out
+  
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
   private final Joystick copilot_joystick = new Joystick(1);
