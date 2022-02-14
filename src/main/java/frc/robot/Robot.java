@@ -11,6 +11,9 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 //import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
+
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -36,6 +39,8 @@ public class Robot extends TimedRobot {
 
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
+
+  private final UsbCamera frontCamera = new UsbCamera("front_camera", 1);
 
   // Left trigger (driver_joystick.getRawAxis(2))  = intake in
   // left bumper (driver_joystick.getRawButton(5)) = intake out
@@ -80,6 +85,9 @@ public class Robot extends TimedRobot {
 
     //Climber Follow
     climber_motor2.follow(climber_motor1);
+
+    //Front camera one time setup
+    CameraServer.startAutomaticCapture();
   }
 
   @Override
