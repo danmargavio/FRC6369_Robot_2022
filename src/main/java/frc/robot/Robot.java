@@ -5,11 +5,12 @@
 package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
-import com.ctre.phoenix.motorcontrol.ControlMode;
+//import com.ctre.phoenix.motorcontrol.ControlMode;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-import edu.wpi.first.wpilibj.smartdashboard.*;
+//import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+//import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
+
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -36,15 +37,15 @@ public class Robot extends TimedRobot {
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
 
-  // Left trigger = intake in
-  // left bumper = intake out
-  // right trigger = shooter out
-  // Y button = conveyer in
-  // B button = conveyer out
+  // Left trigger (driver_joystick.getRawAxis(2))  = intake in
+  // left bumper (driver_joystick.getRawButton(5)) = intake out
+  // right trigger driver_joystick.getRawAxis(3) = shooter out
+  // Y button (driver_joystick.getRawButton(4)) = conveyer in
+  // B button (driver_joystick.getRawButton(2)) = conveyer out
   
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
-  private final Joystick copilot_joystick = new Joystick(1);
+  //private final Joystick copilot_joystick = new Joystick(1);
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
   
   @Override
@@ -98,9 +99,18 @@ public class Robot extends TimedRobot {
         //Tank Drive
         tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
 
-        //Climb
+        //Climber
         //climber_motor1.set(0.5*driver_joystick.getRawAxis(5));
 
+        //Intake (positive inputs intake a cargo)
+
+
+        //Conveyor (positive inputs bring cargo in)
+
+
+        //Shooter (positive inputs shoot cargo out)
+
+        
   }
 
   @Override
