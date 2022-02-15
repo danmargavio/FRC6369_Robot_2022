@@ -11,8 +11,8 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 //import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 
-import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.cscore.UsbCamera;
+//import edu.wpi.first.cameraserver.CameraServer;
+//import edu.wpi.first.cscore.UsbCamera;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -40,7 +40,7 @@ public class Robot extends TimedRobot {
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
 
-  private final UsbCamera frontCamera = new UsbCamera("front_camera", 1);
+  //private final UsbCamera frontCamera = new UsbCamera("front_camera", 1);
 
   // Left trigger (driver_joystick.getRawAxis(2))  = intake in
   // left bumper (driver_joystick.getRawButton(5)) = intake out
@@ -87,7 +87,7 @@ public class Robot extends TimedRobot {
     climber_motor2.follow(climber_motor1);
 
     //Front camera one time setup
-    CameraServer.startAutomaticCapture();
+    //CameraServer.startAutomaticCapture();
   }
 
   @Override
@@ -112,12 +112,28 @@ public class Robot extends TimedRobot {
 
         //Intake (positive inputs intake a cargo)
 
+        if(driver_joystick.getRawButton(5) == true){
+          intake_motor1.set(-0.5);
+        }
+        else if(driver_joystick.getRawButton(5) == false){
+          intake_motor1.set(driver_joystick.getRawAxis(2));
+        }
+        
 
         //Conveyor (positive inputs bring cargo in)
-
+        if ((driver_joystick.getRawButton(4) == true) && (driver_joystick.getRawButton(2) == false)) {
+          conveyer1.set(0.5);
+        }
+        else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(2) == true){
+          conveyer1.set(-0.5);
+        }
+        else {
+          conveyer1.set(0);
+        }
 
         //Shooter (positive inputs shoot cargo out)
-
+        shooter_motor1.set(driver_joystick.getRawAxis(3));
+        
         
   }
 
