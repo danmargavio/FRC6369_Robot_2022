@@ -4,8 +4,9 @@
 
 package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
-//import com.ctre.phoenix.motorcontrol.ControlMode;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 //import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 //import edu.wpi.first.wpilibj.smartdashboard.*;
@@ -41,12 +42,6 @@ public class Robot extends TimedRobot {
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
 
   //private final UsbCamera frontCamera = new UsbCamera("front_camera", 1);
-
-  // Left trigger (driver_joystick.getRawAxis(2))  = intake in
-  // left bumper (driver_joystick.getRawButton(5)) = intake out
-  // right trigger driver_joystick.getRawAxis(3) = shooter out
-  // Y button (driver_joystick.getRawButton(4)) = conveyer in
-  // B button (driver_joystick.getRawButton(2)) = conveyer out
   
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
@@ -113,7 +108,7 @@ public class Robot extends TimedRobot {
         //Intake (positive inputs intake a cargo)
 
         if(driver_joystick.getRawButton(5) == true){
-          intake_motor1.set(-0.5);
+          intake_motor1.set(-1);
         }
         else if(driver_joystick.getRawButton(5) == false){
           intake_motor1.set(driver_joystick.getRawAxis(2));
@@ -122,17 +117,17 @@ public class Robot extends TimedRobot {
 
         //Conveyor (positive inputs bring cargo in)
         if ((driver_joystick.getRawButton(4) == true) && (driver_joystick.getRawButton(2) == false)) {
-          conveyer1.set(0.5);
+          conveyer1.set(1);
         }
         else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(2) == true){
-          conveyer1.set(-0.5);
+          conveyer1.set(-1);
         }
         else {
           conveyer1.set(0);
         }
 
         //Shooter (positive inputs shoot cargo out)
-        shooter_motor1.set(driver_joystick.getRawAxis(3));
+        shooter_motor1.set(driver_joystick.getRawAxis(3)*0.8);
         
         
   }
