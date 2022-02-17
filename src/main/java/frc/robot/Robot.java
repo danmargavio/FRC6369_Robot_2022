@@ -11,9 +11,8 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 //import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 //import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
-
-//import edu.wpi.first.cameraserver.CameraServer;
-//import edu.wpi.first.cscore.UsbCamera;
+import edu.wpi.first.cscore.UsbCamera;
+import edu.wpi.first.cscore.MjpegServer;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -40,13 +39,17 @@ public class Robot extends TimedRobot {
 
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
-
-  //private final UsbCamera frontCamera = new UsbCamera("front_camera", 1);
   
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
   //private final Joystick copilot_joystick = new Joystick(1);
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
+
+  //private final UsbCamera driver_camera = CameraServer.startAutomaticCapture(0);
+
+  // Creates UsbCamera and MjpegServer [1] and connects them
+  UsbCamera usbCamera = new UsbCamera("USB Camera 0", 0);
+  MjpegServer mjpegServer = new MjpegServer("Driver Camera", 1181);
   
   @Override
   public void robotInit() {
@@ -82,7 +85,10 @@ public class Robot extends TimedRobot {
     climber_motor2.follow(climber_motor1);
 
     //Front camera one time setup
-    //CameraServer.startAutomaticCapture();
+    mjpegServer.setSource(usbCamera);
+    mjpegServer.setResolution(240, 180);
+    mjpegServer.setFPS(15);
+    mjpegServer.setCompression(-1);
   }
 
   @Override
