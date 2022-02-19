@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.cscore.UsbCamera;
-import edu.wpi.first.cscore.MjpegServer;
+import edu.wpi.first.cameraserver.CameraServer;
 
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.I2C;
@@ -55,11 +55,8 @@ public class Robot extends TimedRobot {
   //private final Joystick copilot_joystick = new Joystick(1);
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
 
-  //private final UsbCamera driver_camera = CameraServer.startAutomaticCapture(0);
-
-  // Creates UsbCamera and MjpegServer [1] and connects them
-  UsbCamera usbCamera = new UsbCamera("USB Camera 0", 0);
-  MjpegServer mjpegServer = new MjpegServer("Driver Camera", 1181);
+  // Creates UsbCamera
+  UsbCamera driver_camera = new UsbCamera("USB Camera 0", 0);
 
   /// Setup the digital inputs
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
@@ -117,13 +114,9 @@ public class Robot extends TimedRobot {
     shooter_motor1.config_kF(0, 2048/22000, 30);
 
     //Front camera one time setup
-    mjpegServer.setSource(usbCamera);
-    mjpegServer.setResolution(240, 180);
-    mjpegServer.setFPS(15);
-    mjpegServer.setCompression(-1);
+    CameraServer.startAutomaticCapture();
 
     //Setup color sensor
-
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
 
@@ -210,9 +203,6 @@ public class Robot extends TimedRobot {
 
         //Shooter (positive inputs shoot cargo out)
         shooter_motor1.set(driver_joystick.getRawAxis(3)*0.8);
-
-        // Read conveyor 1 location
-        SmartDashboard.putBoolean("conveyor 1 location", conveyor_loc_1.get());
         
         // Read color sensor
         Color detectedColor = color_sensor.getColor();
@@ -231,7 +221,6 @@ public class Robot extends TimedRobot {
 
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
-        
   }
 
   @Override
@@ -246,7 +235,7 @@ public class Robot extends TimedRobot {
   @Override
   public void testPeriodic() {}
 
-
+  // This subroutine performs a semi-autonomous intake and shooting process
   public void autoIntake() {
     if((cargo_status == Robot_Cargo_State.Idle) && (driver_joystick.getRawButton(6) == true)){
       cargo_status = Robot_Cargo_State.Cargo_being_intaked;
@@ -281,10 +270,16 @@ public class Robot extends TimedRobot {
     }  
   }
 
+  // This is is a custom type used to track the state of Cargo intake and shooting
   public enum Robot_Cargo_State {
-    Idle, Cargo_being_intaked, Cargo_awaiting_shooter, Cargo_being_shot, error 
+    Idle,    // This state means that the robot has no cargo in it and all intake/conveyor/shooter motors are off
+    Cargo_being_intaked,     // This state means that a cargo is in the process of being intaked, but still in transit
+    Cargo_awaiting_shooter,    // This state means that a cargo is in the robot and awaiting to be shot out
+    Cargo_being_shot,    // This state means that the cargo is being shot out
+    Error   // This is an error state or condition
   }
 
+  // This method converts a target pitch angle into an estimated robot distance away from the target
   double camAngletoDistance(double camAngle) {
     return 0.0;
   }
