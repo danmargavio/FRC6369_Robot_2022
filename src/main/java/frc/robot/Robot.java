@@ -9,10 +9,20 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 //import com.ctre.phoenix.motorcontrol.FeedbackDevice;
-//import edu.wpi.first.wpilibj.smartdashboard.*;
+import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.cscore.MjpegServer;
+
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.I2C;
+
+import com.revrobotics.ColorSensorV3;
+import com.revrobotics.ColorMatchResult;
+import com.revrobotics.ColorMatch;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.networktables.*;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -50,7 +60,22 @@ public class Robot extends TimedRobot {
   // Creates UsbCamera and MjpegServer [1] and connects them
   UsbCamera usbCamera = new UsbCamera("USB Camera 0", 0);
   MjpegServer mjpegServer = new MjpegServer("Driver Camera", 1181);
-  
+
+  /// Setup the digital inputs
+  private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
+
+  // Setup the color sensor
+  private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
+  private final ColorMatch m_colorMatcher = new ColorMatch();
+
+  private final Color kBlueTarget = new Color(0.143, 0.427, 0.429);
+  private final Color kRedTarget = new Color(0.561, 0.232, 0.114);
+
+  private Robot_Cargo_State cargo_status = Robot_Cargo_State.Idle;
+  private final Timer state4_Timer = new Timer();
+  private double tx_angle;
+  private double ty_angle = -1000.0;
+
   @Override
   public void robotInit() {
 
@@ -84,24 +109,75 @@ public class Robot extends TimedRobot {
     //Climber Follow
     climber_motor2.follow(climber_motor1);
 
+    // Shooter Control Loop Settings
+    shooter_motor1.configNeutralDeadband(0.001);
+		shooter_motor1.config_kP(0, 0.015, 30);
+		shooter_motor1.config_kI(0, 0.000, 30);
+		shooter_motor1.config_kD(0, 0, 30);
+    shooter_motor1.config_kF(0, 2048/22000, 30);
+
     //Front camera one time setup
     mjpegServer.setSource(usbCamera);
     mjpegServer.setResolution(240, 180);
     mjpegServer.setFPS(15);
     mjpegServer.setCompression(-1);
+
+    //Setup color sensor
+
+    m_colorMatcher.addColorMatch(kBlueTarget);
+    m_colorMatcher.addColorMatch(kRedTarget);
+
   }
 
   @Override
   public void robotPeriodic() {}
     
   @Override
-  public void autonomousInit() {}
+  public void autonomousInit() {
+    state4_Timer.start();
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
+    cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+  }
 
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+    tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
+    ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
+    if (camAngletoDistance(ty_angle) <= 10){
+      tarzan_robot.tankDrive(-1*0.8, -1*0.8);
+    }
+    else if (camAngletoDistance(ty_angle) > 10){
+      if (Math.abs(tx_angle) > 0.1){
+        tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
+      }
+      else{
+        tarzan_robot.tankDrive(0, 0);
+      }
+    }
+    if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
+      shooter_motor1.set(ControlMode.Velocity, 18000);
+      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
+        cargo_status = Robot_Cargo_State.Cargo_being_shot;
+      }
+    }
+    else if (cargo_status == Robot_Cargo_State.Cargo_being_shot)
+    {
+      state4_Timer.start();
+      conveyer1.set(0.8); //running conveyer 
+      if (state4_Timer.get() > 2){
+        conveyer1.set(0);
+        shooter_motor1.set(0);
+        state4_Timer.stop();
+        cargo_status = Robot_Cargo_State.Idle;
+      }
+    }
+  }
 
   @Override
-  public void teleopInit() {}
+  public void teleopInit() {
+    state4_Timer.start();
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
+  }
 
   @Override
   public void teleopPeriodic() {
@@ -134,7 +210,27 @@ public class Robot extends TimedRobot {
 
         //Shooter (positive inputs shoot cargo out)
         shooter_motor1.set(driver_joystick.getRawAxis(3)*0.8);
+
+        // Read conveyor 1 location
+        SmartDashboard.putBoolean("conveyor 1 location", conveyor_loc_1.get());
         
+        // Read color sensor
+        Color detectedColor = color_sensor.getColor();
+        String colorString;
+        ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
+        if (match.color == kBlueTarget) {
+          colorString = "Blue";
+        } else if (match.color == kRedTarget) {
+          colorString = "Red";
+        }
+        else {
+          colorString = "Unknown";
+        }
+        SmartDashboard.putString("color sensor output", colorString);
+        SmartDashboard.putNumber("Timer", state4_Timer.get());
+
+        NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
+        NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
         
   }
 
@@ -149,5 +245,48 @@ public class Robot extends TimedRobot {
 
   @Override
   public void testPeriodic() {}
+
+
+  public void autoIntake() {
+    if((cargo_status == Robot_Cargo_State.Idle) && (driver_joystick.getRawButton(6) == true)){
+      cargo_status = Robot_Cargo_State.Cargo_being_intaked;
+    }
+
+    if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
+        intake_motor1.set(0.8); //running intake
+        conveyer1.set(0.8); //running conveyer
+        //shooter_motor1.set(1*0.8); //starting shooter at 80%
+        shooter_motor1.set(ControlMode.Velocity, 18000);
+    } 
+    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
+      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+      intake_motor1.set(0); //stopping intake
+      conveyer1.set(0); //stopping conveyer
+    }
+    else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
+      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
+        cargo_status = Robot_Cargo_State.Cargo_being_shot;
+      }
+    }
+    else if (cargo_status == Robot_Cargo_State.Cargo_being_shot)
+    {
+      state4_Timer.start();
+      conveyer1.set(0.8); //running conveyer 
+      if (state4_Timer.get() > 2){
+        conveyer1.set(0);
+        shooter_motor1.set(0);
+        state4_Timer.stop();
+        cargo_status = Robot_Cargo_State.Idle;
+      }
+    }  
+  }
+
+  public enum Robot_Cargo_State {
+    Idle, Cargo_being_intaked, Cargo_awaiting_shooter, Cargo_being_shot, error 
+  }
+
+  double camAngletoDistance(double camAngle) {
+    return 0.0;
+  }
 
 }
