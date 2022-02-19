@@ -66,7 +66,7 @@ public class Robot extends TimedRobot {
   private final ColorMatch m_colorMatcher = new ColorMatch();
 
   private final Color kBlueTarget = new Color(0.143, 0.427, 0.429);
-  private final Color kRedTarget = new Color(0.561, 0.232, 0.114);
+  private final Color kRedTarget = new Color(0.561, 0.100, 0.340);   // Dan adjusted these values based on measurements of the cargo
 
   private Robot_Cargo_State cargo_status = Robot_Cargo_State.Idle;
   private final Timer state4_Timer = new Timer();
@@ -123,7 +123,13 @@ public class Robot extends TimedRobot {
   }
 
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+
+    SmartDashboard.putNumber("RED", color_sensor.getRed());
+    SmartDashboard.putNumber("BLUE", color_sensor.getBlue());
+    SmartDashboard.putNumber("GREEN", color_sensor.getGreen());
+
+  }
     
   @Override
   public void autonomousInit() {
