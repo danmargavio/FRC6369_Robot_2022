@@ -61,6 +61,16 @@ public class Robot extends TimedRobot {
   /// Setup the digital inputs
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
 
+  // Setup the pneumatics devices
+  Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
+  Solenoid IntakeLeftSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 0);
+  Solenoid IntakeRightSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 1);
+  Solenoid TopLeftSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 5);
+  Solenoid TopRightSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 3);
+  Solenoid BottomLeftSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 4);
+  Solenoid BottomRightSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 2);
+
+
   // Setup the color sensor
   private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
   private final ColorMatch m_colorMatcher = new ColorMatch();
@@ -69,10 +79,21 @@ public class Robot extends TimedRobot {
   private final Color kRedTarget = new Color(0.561, 0.100, 0.340);   // Dan adjusted these values based on measurements of the cargo
 
   private Robot_Cargo_State cargo_status = Robot_Cargo_State.Idle;
+  private Intake_Deployment_State intake_status = Intake_Deployment_State.up;
+  private Climber_State Climber_status = Climber_State.start;
   private final Timer state4_Timer = new Timer();
+  private final Timer state2_Timer = new Timer();
   private double tx_angle;
-  private double ty_angle = -1000.0;
+  private double ty_angle = -1000.0; //target degrees above the center of the camera 
 
+  private final double cameraPitch = 10; //degrees above horizon ||
+  private final double pupilCameraHeight = 12.8; //inches above the ground ||
+  private final double goalHeight = 104; //inches above the ground to the top of the goal
+  private double distanceFromGoal = 0; //inches parallel from shooter to the center of the goal
+  private final double goalRadius = 26.7716535; //inches 
+  private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
+  private final double desiredDistanceFromGoal = 132; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
+  
   @Override
   public void robotInit() {
 
@@ -120,6 +141,9 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
 
+    phCompressor.enableAnalog();
+    phCompressor.enable();
+
   }
 
   @Override
@@ -135,22 +159,24 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     state4_Timer.start();
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
-    cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+    cargo_status = Robot_Cargo_State.Cargo_being_intaked;
   }
 
   @Override
   public void autonomousPeriodic() {
+    moveIntakeUptoDown();
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
-    if (camAngletoDistance(ty_angle) <= 10){
+    if (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal){
       tarzan_robot.tankDrive(-1*0.8, -1*0.8);
     }
-    else if (camAngletoDistance(ty_angle) > 10){
-      if (Math.abs(tx_angle) > 0.1){
+    else if (camAngletoDistance(ty_angle) > desiredDistanceFromGoal){
+      if (Math.abs(tx_angle) > 0.5){
         tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
       }
       else{
         tarzan_robot.tankDrive(0, 0);
+        cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
       }
     }
     if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
@@ -187,7 +213,11 @@ public class Robot extends TimedRobot {
         //climber_motor1.set(0.5*driver_joystick.getRawAxis(5));
 
         //Intake (positive inputs intake a cargo)
-
+        if (Robot_intake_status == Intake_Deployment_State.down){
+          autoIntake();
+        }
+        //replaced by autoIntake()
+        /*
         if(driver_joystick.getRawButton(5) == true){
           intake_motor1.set(-1);
         }
@@ -209,7 +239,8 @@ public class Robot extends TimedRobot {
 
         //Shooter (positive inputs shoot cargo out)
         shooter_motor1.set(driver_joystick.getRawAxis(3)*0.8);
-        
+       */ 
+
         // Read color sensor
         Color detectedColor = color_sensor.getColor();
         String colorString;
@@ -227,6 +258,15 @@ public class Robot extends TimedRobot {
 
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
+        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(8)){
+          moveIntakeDowntoUp();
+        }
+        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
+          initiateMiddleRungClimb();
+        }
+        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
+          finalizeMiddleRungClimb();
+        }
   }
 
   @Override
@@ -245,13 +285,24 @@ public class Robot extends TimedRobot {
   public void autoIntake() {
     if((cargo_status == Robot_Cargo_State.Idle) && (driver_joystick.getRawButton(6) == true)){
       cargo_status = Robot_Cargo_State.Cargo_being_intaked;
+      state2_Timer.start();
     }
 
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-        intake_motor1.set(0.8); //running intake
-        conveyer1.set(0.8); //running conveyer
-        //shooter_motor1.set(1*0.8); //starting shooter at 80%
-        shooter_motor1.set(ControlMode.Velocity, 18000);
+      if (driver_joystick.getRawButton(6) == true){
+        state2_Timer.start();
+      }
+      }
+      if (state2_Timer > 4){
+        intake_motor1.set(0);
+        conveyer1.set(0);
+        shooter_motor1.set(0);
+        cargo_status = Robot_Cargo_State.Idle;
+      }
+      intake_motor1.set(0.8); //running intake
+      conveyer1.set(0.8); //running conveyer
+      //shooter_motor1.set(1*0.8); //starting shooter at 80%
+      shooter_motor1.set(ControlMode.Velocity, 18000);
     } 
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
@@ -285,9 +336,69 @@ public class Robot extends TimedRobot {
     Error   // This is an error state or condition
   }
 
+  public enum Intake_Deployment_State {
+    up, 
+    down
+  }
+  
+  public enum Climber_State {
+    start, 
+    part1ClimbMiddleRung,
+    part2ClimbMiddleRung,
+    part1ClimbTopRung,
+    part2ClimbTopRung,
+    part3ClimbTopRung,
+    part1ClimbTraversal,
+    part2ClimbTraversal,
+    part3ClimbTraversal,
+    part4ClimbTraversal
+  }
   // This method converts a target pitch angle into an estimated robot distance away from the target
-  double camAngletoDistance(double camAngle) {
-    return 0.0;
+  double camAngletoDistance(double a2) {
+    return ((goalHeight - pupilCameraHeight)/(Math.tan(Math.toRadians(cameraPitch + a2))) + pupilDistanceToShooter + goalRadius);
   }
 
+  void moveIntakeUptoDown() {
+    if (Robot_intake_status == Intake_Deployment_State.up) {
+      intake_motor1.set(0);
+      conveyer1.set(0);
+      shooter_motor1.set(0);
+      IntakeLeftSolenoid.set(true);
+      IntakeRightSolenoid.set(true);
+      Robot_intake_status = Intake_Deployment_State.down;
+    }
+  }
+  void initiateMiddleRungClimb() {
+    if ((Climber_status == Climber_State.start) && (Robot_intake_status = Intake_Deployment_State.up)) {
+      climber_motor1.set(ControlMode.Position, 512);
+      if ((climber_motor1.getSelectedSensorVelocity() >= 500) && (shooter_motor1.getSelectedSensorVelocity() <= 520)){
+        TopLeftSolenoid.set(true);
+        TopRightSolenoid.set(true);
+        Climber_status = Climber_State.part1ClimbMiddleRung;
+      }
+    }
+  }
+  void finalizeMiddleRungClimb() {
+    if (Climber_status == Climber_State.part1ClimbMiddleRung) {
+      //magic happens
+      Climber_status = Climber_State.part2ClimbMiddleRung;
+    }
+  }
+  void moveIntakeDowntoUp() {
+    if (Robot_intake_status == Intake_Deployment_State.down) {
+      intake_motor1.set(0);
+      conveyer1.set(0);
+      shooter_motor1.set(0);
+      IntakeLeftSolenoid.set(false);
+      IntakeRightSolenoid.set(false);
+      Robot_intake_status = Intake_Deployment_State.up;
+    }  
+  }
+}
+
+if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
+  shooter_motor1.set(ControlMode.Velocity, 18000);
+  if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
+    cargo_status = Robot_Cargo_State.Cargo_being_shot;
+  }
 }
