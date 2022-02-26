@@ -24,6 +24,20 @@ import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.networktables.*;
 
+import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.PneumaticsModuleType;
+
+//not sure if this is needed
+import edu.wpi.first.wpilibj.AnalogInput; 
+import edu.wpi.first.wpilibj.AnalogPotentiometer;
+import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.*;
+
+
+
+
+
+
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -141,8 +155,8 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
 
-    phCompressor.enableAnalog();
-    phCompressor.enable();
+    phCompressor.enableAnalog(115, 120);   //enableAnalog(cameraPitch, cameraPitch); correct or no?
+    phCompressor.enabled();
 
   }
 
@@ -213,7 +227,7 @@ public class Robot extends TimedRobot {
         //climber_motor1.set(0.5*driver_joystick.getRawAxis(5));
 
         //Intake (positive inputs intake a cargo)
-        if (Robot_intake_status == Intake_Deployment_State.down){
+        if (intake_status == Intake_Deployment_State.down){
           autoIntake();
         }
         //replaced by autoIntake()
@@ -293,18 +307,18 @@ public class Robot extends TimedRobot {
         state2_Timer.start();
       }
       }
-      if (state2_Timer > 4){
+      if (state2_Timer.get() > 4){
         intake_motor1.set(0);
         conveyer1.set(0);
         shooter_motor1.set(0);
         cargo_status = Robot_Cargo_State.Idle;
-      }
+      
       intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
       //shooter_motor1.set(1*0.8); //starting shooter at 80%
       shooter_motor1.set(ControlMode.Velocity, 18000);
     } 
-    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
+    if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
       intake_motor1.set(0); //stopping intake
       conveyer1.set(0); //stopping conveyer
@@ -328,7 +342,7 @@ public class Robot extends TimedRobot {
   }
 
   // This is is a custom type used to track the state of Cargo intake and shooting
-  public enum Robot_Cargo_State {
+  enum Robot_Cargo_State {
     Idle,    // This state means that the robot has no cargo in it and all intake/conveyor/shooter motors are off
     Cargo_being_intaked,     // This state means that a cargo is in the process of being intaked, but still in transit
     Cargo_awaiting_shooter,    // This state means that a cargo is in the robot and awaiting to be shot out
@@ -336,12 +350,12 @@ public class Robot extends TimedRobot {
     Error   // This is an error state or condition
   }
 
-  public enum Intake_Deployment_State {
+  enum Intake_Deployment_State {
     up, 
     down
   }
   
-  public enum Climber_State {
+  enum Climber_State {
     start, 
     part1ClimbMiddleRung,
     part2ClimbMiddleRung,
@@ -359,17 +373,17 @@ public class Robot extends TimedRobot {
   }
 
   void moveIntakeUptoDown() {
-    if (Robot_intake_status == Intake_Deployment_State.up) {
+    if (intake_status == Intake_Deployment_State.up) {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
       IntakeLeftSolenoid.set(true);
       IntakeRightSolenoid.set(true);
-      Robot_intake_status = Intake_Deployment_State.down;
+      intake_status = Intake_Deployment_State.down;
     }
   }
   void initiateMiddleRungClimb() {
-    if ((Climber_status == Climber_State.start) && (Robot_intake_status = Intake_Deployment_State.up)) {
+    if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
       climber_motor1.set(ControlMode.Position, 512);
       if ((climber_motor1.getSelectedSensorVelocity() >= 500) && (shooter_motor1.getSelectedSensorVelocity() <= 520)){
         TopLeftSolenoid.set(true);
@@ -385,20 +399,15 @@ public class Robot extends TimedRobot {
     }
   }
   void moveIntakeDowntoUp() {
-    if (Robot_intake_status == Intake_Deployment_State.down) {
+    if (intake_status == Intake_Deployment_State.down) {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
       IntakeLeftSolenoid.set(false);
       IntakeRightSolenoid.set(false);
-      Robot_intake_status = Intake_Deployment_State.up;
+      intake_status = Intake_Deployment_State.up;
     }  
   }
 }
 
-if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
-  shooter_motor1.set(ControlMode.Velocity, 18000);
-  if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
-    cargo_status = Robot_Cargo_State.Cargo_being_shot;
-  }
-}
+
