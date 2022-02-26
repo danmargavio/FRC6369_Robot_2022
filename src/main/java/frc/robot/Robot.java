@@ -158,11 +158,8 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
 
-<<<<<<< HEAD
     //Setup compressor controls for analog pressure transducer
-=======
     //Setup compressor controls for analog pressure transducer 
->>>>>>> 11afd482c9a6651c815104ad47db4861567004c2
     phCompressor.enableAnalog(115, 120);
     phCompressor.enabled();
 
