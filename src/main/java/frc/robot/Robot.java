@@ -155,7 +155,8 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
 
-    phCompressor.enableAnalog(115, 120);   //enableAnalog(cameraPitch, cameraPitch); correct or no?
+    //Setup compressor controls for analog pressure transducer 
+    phCompressor.enableAnalog(115, 120);
     phCompressor.enabled();
 
   }
@@ -410,5 +411,3 @@ public class Robot extends TimedRobot {
     }  
   }
 }
-
-
