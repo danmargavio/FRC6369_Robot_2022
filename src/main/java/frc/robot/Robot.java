@@ -27,6 +27,19 @@ import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 
+<<<<<<< HEAD
+=======
+//not sure if this is needed
+import edu.wpi.first.wpilibj.AnalogInput; 
+import edu.wpi.first.wpilibj.AnalogPotentiometer;
+import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.*;
+
+
+
+
+
+
+>>>>>>> 6b67af17d24324ab5054aedee191b5b612ab82bc
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -144,8 +157,12 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
 
+<<<<<<< HEAD
     //Setup compressor controls for analog pressure transducer
     phCompressor.enableAnalog(115, 120);
+=======
+    phCompressor.enableAnalog(115, 120);   //enableAnalog(cameraPitch, cameraPitch); correct or no?
+>>>>>>> 6b67af17d24324ab5054aedee191b5b612ab82bc
     phCompressor.enabled();
 
   }
