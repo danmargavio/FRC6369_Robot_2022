@@ -8,39 +8,22 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-//import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.cameraserver.CameraServer;
-
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.I2C;
-
 import com.revrobotics.ColorSensorV3;
 import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorMatch;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.networktables.*;
-
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 
-<<<<<<< HEAD
-=======
-//not sure if this is needed
-import edu.wpi.first.wpilibj.AnalogInput; 
-import edu.wpi.first.wpilibj.AnalogPotentiometer;
-import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.*;
-
-
-
-
-
-
->>>>>>> 11afd482c9a6651c815104ad47db4861567004c2
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -56,14 +39,12 @@ public class Robot extends TimedRobot {
   //private final Subsystems my_subsystem = new Subsystems();
   private final WPI_TalonFX shooter_motor1 = new WPI_TalonFX(7);
   private final WPI_TalonFX shooter_motor2 = new WPI_TalonFX(8);
-
   private final WPI_TalonFX driver_leftmotor1 = new WPI_TalonFX(2);
   private final WPI_TalonFX driver_leftmotor2 = new WPI_TalonFX(3);
   private final WPI_TalonFX driver_rightmotor1 = new WPI_TalonFX(4);
   private final WPI_TalonFX driver_rightmotor2 = new WPI_TalonFX(5);
   private final WPI_TalonFX climber_motor1 = new WPI_TalonFX(14);
   private final WPI_TalonFX climber_motor2 = new WPI_TalonFX(15);
-
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
   
@@ -86,7 +67,6 @@ public class Robot extends TimedRobot {
   Solenoid TopRightSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 3);
   Solenoid BottomLeftSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 4);
   Solenoid BottomRightSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 2);
-
 
   // Setup the color sensor
   private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
@@ -116,15 +96,12 @@ public class Robot extends TimedRobot {
 
     shooter_motor1.configFactoryDefault();
     shooter_motor2.configFactoryDefault();
-
     driver_leftmotor1.configFactoryDefault();
     driver_leftmotor2.configFactoryDefault();
     driver_rightmotor1.configFactoryDefault();
     driver_rightmotor2.configFactoryDefault();
-
     climber_motor1.configFactoryDefault();
     climber_motor2.configFactoryDefault();
-
     intake_motor1.configFactoryDefault();
     conveyer1.configFactoryDefault();
 
@@ -159,7 +136,6 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kRedTarget);
 
     //Setup compressor controls for analog pressure transducer
-    //Setup compressor controls for analog pressure transducer 
     phCompressor.enableAnalog(115, 120);
     phCompressor.enabled();
 
@@ -228,9 +204,6 @@ public class Robot extends TimedRobot {
         //Tank Drive
         tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
 
-        //Climber
-        //climber_motor1.set(0.5*driver_joystick.getRawAxis(5));
-
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
           autoIntake(); // currently replaces manualIntake();
@@ -277,7 +250,10 @@ public class Robot extends TimedRobot {
   @Override
   public void testPeriodic() {}
 
-  // This subroutine performs a semi-autonomous intake and shooting process
+    /**
+   * This subroutine performs the semi-autonomous intake and shooting process
+   *
+   */
   public void autoIntake() {
     if((cargo_status == Robot_Cargo_State.Idle) && (driver_joystick.getRawButton(6) == true)){
       cargo_status = Robot_Cargo_State.Cargo_being_intaked;
@@ -323,6 +299,10 @@ public class Robot extends TimedRobot {
     }  
   }
 
+      /**
+   * This subroutine performs the robot operations manually
+   *
+   */
   public void manualIntake(){
     if(driver_joystick.getRawButton(5) == true){
       intake_motor1.set(-1);
@@ -373,11 +353,21 @@ public class Robot extends TimedRobot {
     part3ClimbTraversal,
     part4ClimbTraversal
   }
-  // This method converts a target pitch angle into an estimated robot distance away from the target
+
+    /**
+   * This method converts a target pitch angle into an estimated robot distance away from the target
+   *
+   * @param a2 The input angle representing the pitch of the target above the camera reticle, in degrees.
+   * @return The predicted distance from the target from the shooter exit location, in inches.
+   */
   double camAngletoDistance(double a2) {
     return ((goalHeight - pupilCameraHeight)/(Math.tan(Math.toRadians(cameraPitch + a2))) + pupilDistanceToShooter + goalRadius);
   }
 
+      /**
+   * This subroutine moves the intake from the Up to the Down position
+   *
+   */
   void moveIntakeUptoDown() {
     if (intake_status == Intake_Deployment_State.up) {
       intake_motor1.set(0);
@@ -388,6 +378,11 @@ public class Robot extends TimedRobot {
       intake_status = Intake_Deployment_State.down;
     }
   }
+
+      /**
+   * This subroutine begins the process of climbing the middle rung
+   *
+   */
   void initiateMiddleRungClimb() {
     if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
       climber_motor1.set(ControlMode.Position, 512);
@@ -398,12 +393,22 @@ public class Robot extends TimedRobot {
       }
     }
   }
+
+      /**
+   * This subroutine completes the process of climbing the middle rung
+   *
+   */
   void finalizeMiddleRungClimb() {
     if (Climber_status == Climber_State.part1ClimbMiddleRung) {
       //magic happens
       Climber_status = Climber_State.part2ClimbMiddleRung;
     }
   }
+
+      /**
+   * This subroutine moves the intake from the Down to the Up position
+   *
+   */
   void moveIntakeDowntoUp() {
     if (intake_status == Intake_Deployment_State.down) {
       intake_motor1.set(0);
@@ -414,4 +419,5 @@ public class Robot extends TimedRobot {
       intake_status = Intake_Deployment_State.up;
     }  
   }
+
 }
