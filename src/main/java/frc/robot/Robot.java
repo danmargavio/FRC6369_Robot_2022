@@ -8,7 +8,6 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-//import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.cscore.UsbCamera;
@@ -27,16 +26,6 @@ import edu.wpi.first.networktables.*;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
-
-//not sure if this is needed
-import edu.wpi.first.wpilibj.AnalogInput; 
-import edu.wpi.first.wpilibj.AnalogPotentiometer;
-import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.*;
-
-
-
-
-
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -155,7 +144,8 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
 
-    phCompressor.enableAnalog(115, 120);   //enableAnalog(cameraPitch, cameraPitch); correct or no?
+    //Setup compressor controls for analog pressure transducer
+    phCompressor.enableAnalog(115, 120);
     phCompressor.enabled();
 
   }
