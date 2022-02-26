@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+//import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.cscore.UsbCamera;
@@ -27,6 +28,19 @@ import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 
+<<<<<<< HEAD
+=======
+//not sure if this is needed
+import edu.wpi.first.wpilibj.AnalogInput; 
+import edu.wpi.first.wpilibj.AnalogPotentiometer;
+import static edu.wpi.first.wpilibj.DoubleSolenoid.Value.*;
+
+
+
+
+
+
+>>>>>>> 11afd482c9a6651c815104ad47db4861567004c2
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -144,7 +158,11 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
 
+<<<<<<< HEAD
     //Setup compressor controls for analog pressure transducer
+=======
+    //Setup compressor controls for analog pressure transducer 
+>>>>>>> 11afd482c9a6651c815104ad47db4861567004c2
     phCompressor.enableAnalog(115, 120);
     phCompressor.enabled();
 
@@ -218,32 +236,9 @@ public class Robot extends TimedRobot {
 
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
-          autoIntake();
+          autoIntake(); // currently replaces manualIntake();
+          //manualIntake(); 
         }
-        //replaced by autoIntake()
-        /*
-        if(driver_joystick.getRawButton(5) == true){
-          intake_motor1.set(-1);
-        }
-        else if(driver_joystick.getRawButton(5) == false){
-          intake_motor1.set(driver_joystick.getRawAxis(2));
-        }
-        
-
-        //Conveyor (positive inputs bring cargo in)
-        if ((driver_joystick.getRawButton(4) == true) && (driver_joystick.getRawButton(2) == false)) {
-          conveyer1.set(1);
-        }
-        else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(2) == true){
-          conveyer1.set(-1);
-        }
-        else {
-          conveyer1.set(0);
-        }
-
-        //Shooter (positive inputs shoot cargo out)
-        shooter_motor1.set(driver_joystick.getRawAxis(3)*0.8);
-       */ 
 
         // Read color sensor
         Color detectedColor = color_sensor.getColor();
@@ -331,6 +326,30 @@ public class Robot extends TimedRobot {
     }  
   }
 
+  public void manualIntake(){
+    if(driver_joystick.getRawButton(5) == true){
+      intake_motor1.set(-1);
+    }
+    else if(driver_joystick.getRawButton(5) == false){
+      intake_motor1.set(driver_joystick.getRawAxis(2));
+    }
+    
+
+    //Conveyor (positive inputs bring cargo in)
+    if ((driver_joystick.getRawButton(4) == true) && (driver_joystick.getRawButton(2) == false)) {
+      conveyer1.set(1);
+    }
+    else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(2) == true){
+      conveyer1.set(-1);
+    }
+    else {
+      conveyer1.set(0);
+    }
+
+    //Shooter (positive inputs shoot cargo out)
+    shooter_motor1.set(driver_joystick.getRawAxis(3)*0.8);
+  }
+
   // This is is a custom type used to track the state of Cargo intake and shooting
   enum Robot_Cargo_State {
     Idle,    // This state means that the robot has no cargo in it and all intake/conveyor/shooter motors are off
@@ -399,5 +418,3 @@ public class Robot extends TimedRobot {
     }  
   }
 }
-
-
