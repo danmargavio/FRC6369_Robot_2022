@@ -19,8 +19,10 @@ import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorMatch;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.networktables.*;
 import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 
@@ -61,12 +63,12 @@ public class Robot extends TimedRobot {
 
   // Setup the pneumatics devices
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
-  Solenoid IntakeLeftSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 0);
-  Solenoid IntakeRightSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 1);
-  Solenoid TopLeftSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 5);
-  Solenoid TopRightSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 3);
-  Solenoid BottomLeftSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 4);
-  Solenoid BottomRightSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 2);
+  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
+  DoubleSolenoid TopLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 3);
+  DoubleSolenoid TopRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 5);
+  DoubleSolenoid BottomLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7);
+  DoubleSolenoid BottomRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 8, 9);
+  Solenoid MotorCoolerSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 10);
 
   // Setup the color sensor
   private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
@@ -373,8 +375,7 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
-      IntakeLeftSolenoid.set(true);
-      IntakeRightSolenoid.set(true);
+      IntakeSolenoid.set(Value.kForward);
       intake_status = Intake_Deployment_State.down;
     }
   }
@@ -387,8 +388,8 @@ public class Robot extends TimedRobot {
     if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
       climber_motor1.set(ControlMode.Position, 512);
       if ((climber_motor1.getSelectedSensorVelocity() >= 500) && (shooter_motor1.getSelectedSensorVelocity() <= 520)){
-        TopLeftSolenoid.set(true);
-        TopRightSolenoid.set(true);
+        TopLeftSolenoid.set(Value.kForward);
+        TopRightSolenoid.set(Value.kForward);
         Climber_status = Climber_State.part1ClimbMiddleRung;
       }
     }
@@ -400,7 +401,8 @@ public class Robot extends TimedRobot {
    */
   void finalizeMiddleRungClimb() {
     if (Climber_status == Climber_State.part1ClimbMiddleRung) {
-      //magic happens
+      TopLeftSolenoid.set(Value.kReverse);
+      TopRightSolenoid.set(Value.kReverse);
       Climber_status = Climber_State.part2ClimbMiddleRung;
     }
   }
@@ -414,8 +416,7 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
-      IntakeLeftSolenoid.set(false);
-      IntakeRightSolenoid.set(false);
+      IntakeSolenoid.set(Value.kReverse);
       intake_status = Intake_Deployment_State.up;
     }  
   }
