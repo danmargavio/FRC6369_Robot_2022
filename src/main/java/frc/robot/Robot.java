@@ -215,7 +215,7 @@ public class Robot extends TimedRobot {
           autoAim();
         }
         else{
-          tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5))
+          tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
         }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
@@ -449,4 +449,5 @@ public class Robot extends TimedRobot {
 
   }
 
+}
 }
