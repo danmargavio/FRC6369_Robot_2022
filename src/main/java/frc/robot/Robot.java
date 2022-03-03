@@ -18,6 +18,7 @@ import com.revrobotics.ColorSensorV3;
 import com.revrobotics.ColorMatchResult;
 import com.revrobotics.ColorMatch;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.networktables.*;
@@ -141,6 +142,10 @@ public class Robot extends TimedRobot {
     phCompressor.enableAnalog(115, 120);
     phCompressor.enabled();
 
+    //Cooling Solenoid Set to Off
+    MotorCoolerSolenoid.set(false);
+    
+
   }
 
   @Override
@@ -161,6 +166,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
+    MotorCoolerSolenoid.set(true);
     moveIntakeUptoDown();
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -203,9 +209,14 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-        //Tank Drive
-        tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
-
+    MotorCoolerSolenoid.set(true);
+        //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
+        if (driver_joystick.getRawButton(2)){
+          autoAim();
+        }
+        else{
+          tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5))
+        }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
           autoIntake(); // currently replaces manualIntake();
@@ -236,6 +247,7 @@ public class Robot extends TimedRobot {
           initiateMiddleRungClimb();
         }
         if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
+          MotorCoolerSolenoid.set(false);
           finalizeMiddleRungClimb();
         }
   }
@@ -419,6 +431,22 @@ public class Robot extends TimedRobot {
       IntakeSolenoid.set(Value.kReverse);
       intake_status = Intake_Deployment_State.up;
     }  
+  }
+  void autoAim() {
+    if (Math.abs(tx_angle) > 5){
+      tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
+
+    }
+    else if ((tx_angle >0.5) && (tx_angle<5)){
+      tarzan_robot.tankDrive(0.10, -0.10);
+    }
+    else if ((tx_angle > -5) && (tx_angle <-0.5)){
+      tarzan_robot.tankDrive(-0.10, 0.10);
+    }
+    else{
+      tarzan_robot.tankDrive(0, 0);
+      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+
   }
 
 }
