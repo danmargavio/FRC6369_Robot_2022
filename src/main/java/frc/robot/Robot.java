@@ -92,6 +92,7 @@ public class Robot extends TimedRobot {
   private final double goalRadius = 26.7716535; //inches 
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
   private final double desiredDistanceFromGoal = 132; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
+  private double pressureValue = 0;
   
   @Override
   public void robotInit() {
@@ -151,6 +152,8 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("RED", color_sensor.getRed());
     SmartDashboard.putNumber("BLUE", color_sensor.getBlue());
     SmartDashboard.putNumber("GREEN", color_sensor.getGreen());
+    pressureValue = phCompressor.getPressure();
+    SmartDashboard.putNumber("PSI", pressureValue);
 
   }
     
@@ -204,7 +207,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
         //Compressor Test
-        //compressorTest();
+        compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
