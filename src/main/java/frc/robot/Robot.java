@@ -204,7 +204,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
         //Compressor Test
-        //compressorTest();
+        compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
@@ -448,10 +448,34 @@ public class Robot extends TimedRobot {
 
 }
 void compressorTest() {
-  if(driver_joystick.getRawButton(4)){
-    IntakeSolenoid.set(Value.kForward);
+  if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 0)){
+    TopLeftSolenoid.set(Value.kForward);
   }  
-  else if (driver_joystick.getRawButton(8)){
+  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 0)){
+    TopLeftSolenoid.set(Value.kReverse);
+  }
+  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 90)){
+    TopRightSolenoid.set(Value.kForward);
+  }
+  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 90)){
+    TopRightSolenoid.set(Value.kReverse);
+  }
+  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
+    BottomLeftSolenoid.set(Value.kForward);
+  }
+  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){
+    BottomLeftSolenoid.set(Value.kReverse);
+  }
+  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
+    BottomRightSolenoid.set(Value.kForward);
+  }
+  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
+    BottomRightSolenoid.set(Value.kReverse);
+  }
+  else if(driver_joystick.getRawButton(8) && (driver_joystick.getRawButton(4))){
+    IntakeSolenoid.set(Value.kForward);
+  }
+  else if(driver_joystick.getRawButton(8) && (driver_joystick.getRawButton(2))){
     IntakeSolenoid.set(Value.kReverse);
   }
 }
