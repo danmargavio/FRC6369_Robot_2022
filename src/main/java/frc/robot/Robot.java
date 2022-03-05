@@ -52,7 +52,7 @@ public class Robot extends TimedRobot {
   
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
-  //private final Joystick copilot_joystick = new Joystick(1);
+  private final Joystick copilot_joystick = new Joystick(1);
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
 
   // Creates UsbCamera
@@ -478,6 +478,9 @@ void compressorTest() {
   else if(driver_joystick.getRawButton(8) && (driver_joystick.getRawButton(2))){
     IntakeSolenoid.set(Value.kReverse);
   }
+}
+void climberTest(){
+  climber_motor1.set(copilot_joystick.getRawAxis(5));
 }
   
 
