@@ -69,7 +69,7 @@ public class Robot extends TimedRobot {
   DoubleSolenoid TopRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 5);
   DoubleSolenoid BottomLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7);
   DoubleSolenoid BottomRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 8, 9);
-  Solenoid MotorCoolerSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 10);
+  
 
   // Setup the color sensor
   private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
@@ -139,11 +139,9 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kRedTarget);
 
     //Setup compressor controls for analog pressure transducer
-    phCompressor.enableAnalog(115, 120);
+    phCompressor.enableAnalog(90, 120);
     phCompressor.enabled();
 
-    //Cooling Solenoid Set to Off
-    MotorCoolerSolenoid.set(false);
     
 
   }
@@ -166,7 +164,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
-    MotorCoolerSolenoid.set(true);
     moveIntakeUptoDown();
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -209,7 +206,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    MotorCoolerSolenoid.set(true);
+        //Compressor Test
+        compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
@@ -247,7 +245,7 @@ public class Robot extends TimedRobot {
           initiateMiddleRungClimb();
         }
         if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
-          MotorCoolerSolenoid.set(false);
+          
           finalizeMiddleRungClimb();
         }
   }
@@ -446,8 +444,20 @@ public class Robot extends TimedRobot {
     else{
       tarzan_robot.tankDrive(0, 0);
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+    
 
   }
+  
 
 }
+void compressorTest() {
+  if(driver_joystick.getRawButton(4)){
+    IntakeSolenoid.set(Value.kForward);
+  }  
+  else if (driver_joystick.getRawButton(8)){
+    IntakeSolenoid.set(Value.kReverse);
+  }
+}
+  
+
 }
