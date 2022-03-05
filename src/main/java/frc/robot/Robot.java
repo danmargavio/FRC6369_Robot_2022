@@ -204,7 +204,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
         //Compressor Test
-        compressorTest();
+        //compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
