@@ -170,13 +170,11 @@ public class Robot extends TimedRobot {
       tarzan_robot.tankDrive(-1*0.8, -1*0.8);
     }
     else if (camAngletoDistance(ty_angle) > desiredDistanceFromGoal){
-      if (Math.abs(tx_angle) > 0.5){
+      /*if (Math.abs(tx_angle) > 0.5){
         tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
-      }
-      else{
-        tarzan_robot.tankDrive(0, 0);
-        cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
-      }
+      }*/
+      autoAim();
+  
     }
     if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
       shooter_motor1.set(ControlMode.Velocity, 18000);
@@ -206,7 +204,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
         //Compressor Test
-        compressorTest();
+        //compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
