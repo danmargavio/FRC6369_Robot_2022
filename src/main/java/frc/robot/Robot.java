@@ -63,10 +63,10 @@ public class Robot extends TimedRobot {
 
   // Setup the pneumatics devices
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
-  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
+  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7); /*6 moves down 7 moves up*/
   DoubleSolenoid TopLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 3);
   DoubleSolenoid TopRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 5);
-  DoubleSolenoid BottomLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7);
+  DoubleSolenoid BottomLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
   DoubleSolenoid BottomRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 8, 9);
   
 
@@ -222,7 +222,7 @@ public class Robot extends TimedRobot {
         }
 
         // Read color sensor
-        Color detectedColor = color_sensor.getColor();
+        /*Color detectedColor = color_sensor.getColor();
         String colorString;
         ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
         if (match.color == kBlueTarget) {
@@ -234,7 +234,7 @@ public class Robot extends TimedRobot {
           colorString = "Unknown";
         }
         SmartDashboard.putString("color sensor output", colorString);
-        SmartDashboard.putNumber("Timer", state4_Timer.get());
+        SmartDashboard.putNumber("Timer", state4_Timer.get());*/
 
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
