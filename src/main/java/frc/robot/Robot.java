@@ -52,30 +52,30 @@ public class Robot extends TimedRobot {
   
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
-  private final Joystick copilot_joystick = new Joystick(1);
+  //private final Joystick copilot_joystick = new Joystick(1);
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
 
   // Creates UsbCamera
-  UsbCamera driver_camera = new UsbCamera("USB Camera 0", 0);
+  //UsbCamera driver_camera = new UsbCamera("USB Camera 0", 0);
 
   /// Setup the digital inputs
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
 
   // Setup the pneumatics devices
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
-  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7); /*6 moves down 7 moves up*/
+  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
   DoubleSolenoid TopLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 3);
   DoubleSolenoid TopRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 5);
-  DoubleSolenoid BottomLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
+  DoubleSolenoid BottomLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7);
   DoubleSolenoid BottomRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 8, 9);
   
 
   // Setup the color sensor
-  private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
-  private final ColorMatch m_colorMatcher = new ColorMatch();
+  //private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
+  //private final ColorMatch m_colorMatcher = new ColorMatch();
 
-  private final Color kBlueTarget = new Color(0.143, 0.427, 0.429);
-  private final Color kRedTarget = new Color(0.561, 0.100, 0.340);   // Dan adjusted these values based on measurements of the cargo
+  //private final Color kBlueTarget = new Color(0.143, 0.427, 0.429);
+  //private final Color kRedTarget = new Color(0.561, 0.100, 0.340);   // Dan adjusted these values based on measurements of the cargo
 
   private Robot_Cargo_State cargo_status = Robot_Cargo_State.Idle;
   private Intake_Deployment_State intake_status = Intake_Deployment_State.up;
@@ -135,8 +135,8 @@ public class Robot extends TimedRobot {
     CameraServer.startAutomaticCapture();
 
     //Setup color sensor
-    m_colorMatcher.addColorMatch(kBlueTarget);
-    m_colorMatcher.addColorMatch(kRedTarget);
+    //m_colorMatcher.addColorMatch(kBlueTarget);
+    //m_colorMatcher.addColorMatch(kRedTarget);
 
     //Setup compressor controls for analog pressure transducer
     phCompressor.enableAnalog(90, 120);
@@ -149,9 +149,9 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
 
-    SmartDashboard.putNumber("RED", color_sensor.getRed());
-    SmartDashboard.putNumber("BLUE", color_sensor.getBlue());
-    SmartDashboard.putNumber("GREEN", color_sensor.getGreen());
+    //SmartDashboard.putNumber("RED", color_sensor.getRed());
+    //SmartDashboard.putNumber("BLUE", color_sensor.getBlue());
+    //SmartDashboard.putNumber("GREEN", color_sensor.getGreen());
     pressureValue = phCompressor.getPressure();
     SmartDashboard.putNumber("PSI", pressureValue);
 
@@ -206,8 +206,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
+        
         //Compressor Test
-        compressorTest();
+        //compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
@@ -233,8 +234,8 @@ public class Robot extends TimedRobot {
         else {
           colorString = "Unknown";
         }
-        SmartDashboard.putString("color sensor output", colorString);
-        SmartDashboard.putNumber("Timer", state4_Timer.get());*/
+        SmartDashboard.putString("color sensor output", colorString); */
+        SmartDashboard.putNumber("Timer", state4_Timer.get());
 
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -451,39 +452,12 @@ public class Robot extends TimedRobot {
 
 }
 void compressorTest() {
-  if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 0)){
-    TopLeftSolenoid.set(Value.kForward);
-  }  
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 0)){
-    TopLeftSolenoid.set(Value.kReverse);
-  }
-  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 90)){
-    TopRightSolenoid.set(Value.kForward);
-  }
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 90)){
-    TopRightSolenoid.set(Value.kReverse);
-  }
-  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
-    BottomLeftSolenoid.set(Value.kForward);
-  }
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){
-    BottomLeftSolenoid.set(Value.kReverse);
-  }
-  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
-    BottomRightSolenoid.set(Value.kForward);
-  }
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
-    BottomRightSolenoid.set(Value.kReverse);
-  }
-  else if(driver_joystick.getRawButton(8) && (driver_joystick.getRawButton(4))){
+  if(driver_joystick.getRawButton(4)){
     IntakeSolenoid.set(Value.kForward);
-  }
-  else if(driver_joystick.getRawButton(8) && (driver_joystick.getRawButton(2))){
+  }  
+  else if (driver_joystick.getRawButton(8)){
     IntakeSolenoid.set(Value.kReverse);
   }
-}
-void climberTest(){
-  climber_motor1.set(copilot_joystick.getRawAxis(5));
 }
   
 
