@@ -61,9 +61,9 @@ public class Robot extends TimedRobot {
   /// Setup the digital inputs
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
 
-  // Setup the pneumatics devices
+  // Setup the pneumatics devices, 
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
-  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7); /*6 moves down 7 moves up*/
+  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7); /* Make sure channel number associates with kReverse and Forward Ex: Channel 6 brings down (kReverse) and vice versa with channel 7*/
   DoubleSolenoid TopLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 3);
   DoubleSolenoid TopRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 5);
   DoubleSolenoid BottomLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
@@ -206,6 +206,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
+        //climber test
+        climberTest();
         //Compressor Test
         compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
@@ -466,10 +468,10 @@ void compressorTest() {
   else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
     BottomLeftSolenoid.set(Value.kForward);
   }
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){
+  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){   
     BottomLeftSolenoid.set(Value.kReverse);
   }
-  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
+  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){ /* */
     BottomRightSolenoid.set(Value.kForward);
   }
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
