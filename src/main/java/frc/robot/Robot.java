@@ -63,11 +63,11 @@ public class Robot extends TimedRobot {
 
   // Setup the pneumatics devices, 
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
-  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 6, 7); /* Make sure channel number associates with kReverse and Forward Ex: Channel 6 brings down (kReverse) and vice versa with channel 7*/
-  DoubleSolenoid TopLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 3);
-  DoubleSolenoid TopRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 5);
-  DoubleSolenoid BottomLeftSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 1);
-  DoubleSolenoid BottomRightSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 8, 9);
+  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 15); /* Make sure channel number associates with kReverse and Forward Ex: Channel 6 brings down (kReverse) and vice versa with channel 7*/
+  DoubleSolenoid LeftClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12); //Kforward is Retract and KReverse is Extend
+  DoubleSolenoid RightClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 1, 14);
+  DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 11);
+  DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
   
 
   // Setup the color sensor
@@ -96,6 +96,7 @@ public class Robot extends TimedRobot {
   
   @Override
   public void robotInit() {
+
 
     shooter_motor1.configFactoryDefault();
     shooter_motor2.configFactoryDefault();
@@ -142,7 +143,12 @@ public class Robot extends TimedRobot {
     phCompressor.enableAnalog(90, 120);
     phCompressor.enabled();
 
-    
+    //Initializes Solenoids on position 'A'
+    IntakeSolenoid.set(Value.kForward);
+    RightClimberSolenoid1.set(Value.kForward);
+    RightClimberSolenoid2.set(Value.kForward);
+    LeftClimberSolenoid1.set(Value.kForward);
+    LeftClimberSolenoid2.set(Value.kForward);
 
   }
 
@@ -400,8 +406,8 @@ public class Robot extends TimedRobot {
     if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
       climber_motor1.set(ControlMode.Position, 512);
       if ((climber_motor1.getSelectedSensorVelocity() >= 500) && (shooter_motor1.getSelectedSensorVelocity() <= 520)){
-        TopLeftSolenoid.set(Value.kForward);
-        TopRightSolenoid.set(Value.kForward);
+        LeftClimberSolenoid1.set(Value.kForward);
+        RightClimberSolenoid1.set(Value.kForward);
         Climber_status = Climber_State.part1ClimbMiddleRung;
       }
     }
@@ -413,8 +419,8 @@ public class Robot extends TimedRobot {
    */
   void finalizeMiddleRungClimb() {
     if (Climber_status == Climber_State.part1ClimbMiddleRung) {
-      TopLeftSolenoid.set(Value.kReverse);
-      TopRightSolenoid.set(Value.kReverse);
+      LeftClimberSolenoid1.set(Value.kReverse);
+      RightClimberSolenoid1.set(Value.kReverse);
       Climber_status = Climber_State.part2ClimbMiddleRung;
     }
   }
@@ -454,28 +460,28 @@ public class Robot extends TimedRobot {
 }
 void compressorTest() {
   if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 0)){
-    TopLeftSolenoid.set(Value.kForward);
+    LeftClimberSolenoid1.set(Value.kForward);
   }  
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 0)){
-    TopLeftSolenoid.set(Value.kReverse);
+    LeftClimberSolenoid1.set(Value.kReverse);
   }
   else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 90)){
-    TopRightSolenoid.set(Value.kForward);
+    RightClimberSolenoid1.set(Value.kForward);
   }
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 90)){
-    TopRightSolenoid.set(Value.kReverse);
+    RightClimberSolenoid1.set(Value.kReverse);
   }
   else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
-    BottomLeftSolenoid.set(Value.kForward);
+    LeftClimberSolenoid2.set(Value.kForward);
   }
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){   
-    BottomLeftSolenoid.set(Value.kReverse);
+    LeftClimberSolenoid2.set(Value.kReverse);
   }
   else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){ /* */
-    BottomRightSolenoid.set(Value.kForward);
+    RightClimberSolenoid2.set(Value.kForward);
   }
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
-    BottomRightSolenoid.set(Value.kReverse);
+    RightClimberSolenoid2.set(Value.kReverse);
   }
   else if(driver_joystick.getRawButton(8) && (driver_joystick.getRawButton(4))){
     IntakeSolenoid.set(Value.kForward);
