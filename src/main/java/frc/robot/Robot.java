@@ -66,10 +66,10 @@ public class Robot extends TimedRobot {
   // Setup the pneumatics devices, 
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
   DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 15); /* Make sure channel number associates with kReverse and Forward Ex: Channel 6 brings down (kReverse) and vice versa with channel 7*/
-  DoubleSolenoid LeftClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12); //Kforward is Retract and KReverse is Extend
+  DoubleSolenoid LeftClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 11); //Kforward is Retract and KReverse is Extend
   DoubleSolenoid RightClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 1, 14);
-  DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 11);
-  DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
+  DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
+  DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
   
 
   // Setup the color sensor
@@ -485,10 +485,10 @@ void compressorTest() {
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
     RightClimberSolenoid2.set(Value.kReverse);
   }
-  else if(driver_joystick.getRawButton(8) && (driver_joystick.getRawButton(4))){
+  else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(4)){
     IntakeSolenoid.set(Value.kForward);
   }  
-  else if (driver_joystick.getRawButton(8)){
+  else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(2)){
     IntakeSolenoid.set(Value.kReverse);
   }
 }
