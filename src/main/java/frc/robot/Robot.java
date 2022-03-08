@@ -162,6 +162,7 @@ public class Robot extends TimedRobot {
     //SmartDashboard.putNumber("GREEN", color_sensor.getGreen());
     pressureValue = phCompressor.getPressure();
     SmartDashboard.putNumber("PSI", pressureValue);
+    SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
 
   }
     
