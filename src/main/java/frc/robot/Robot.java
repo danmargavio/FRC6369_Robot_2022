@@ -11,7 +11,7 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.cscore.UsbCamera;
-import edu.wpi.first.cameraserver.CameraServer;
+//import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.I2C;
 import com.revrobotics.ColorSensorV3;
@@ -56,7 +56,7 @@ public class Robot extends TimedRobot {
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
 
   // Creates UsbCamera
-  //UsbCamera driver_camera = new UsbCamera("USB Camera 0", 0);
+  UsbCamera driver_camera = new UsbCamera("USB Camera 0", 0);
 
   /// Setup the digital inputs
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
@@ -133,7 +133,7 @@ public class Robot extends TimedRobot {
     shooter_motor1.config_kF(0, 2048/22000, 30);
 
     //Front camera one time setup
-    CameraServer.startAutomaticCapture();
+    //CameraServer.startAutomaticCapture();
 
     //Setup color sensor
     //m_colorMatcher.addColorMatch(kBlueTarget);
@@ -213,7 +213,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
         //climber test
-        climberTest();
+        //climberTest();
         //Compressor Test
         //compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
