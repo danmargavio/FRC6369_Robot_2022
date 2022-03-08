@@ -5,6 +5,8 @@
 package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 
+import java.lang.management.CompilationMXBean;
+
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -52,7 +54,7 @@ public class Robot extends TimedRobot {
   
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
-  //private final Joystick copilot_joystick = new Joystick(1);
+  private final Joystick copilot_joystick = new Joystick(1);
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
 
   // Creates UsbCamera
@@ -213,9 +215,9 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
         //climber test
-        //climberTest();
+        climberTest();
         //Compressor Test
-        //compressorTest();
+        compressorTest();
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
@@ -490,6 +492,9 @@ void compressorTest() {
     IntakeSolenoid.set(Value.kReverse);
   }
 }
-  
+
+void climberTest() {
+  climber_motor1.set(copilot_joystick.getRawAxis(5));
+}
 
 }
