@@ -312,6 +312,7 @@ public class Robot extends TimedRobot {
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+      state2_Timer.stop();
       intake_motor1.set(0); //stopping intake
       conveyer1.set(0); //stopping conveyer
     }
