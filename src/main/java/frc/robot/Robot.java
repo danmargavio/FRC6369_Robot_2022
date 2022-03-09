@@ -16,9 +16,9 @@ import edu.wpi.first.cscore.UsbCamera;
 //import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.I2C;
-import com.revrobotics.ColorSensorV3;
-import com.revrobotics.ColorMatchResult;
-import com.revrobotics.ColorMatch;
+//import com.revrobotics.ColorSensorV3;
+//import com.revrobotics.ColorMatchResult;
+//import com.revrobotics.ColorMatch;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -517,13 +517,14 @@ void IntakeTest1(){
     if (driver_joystick.getRawButton(6) == true){
       state2_Timer.start();
     }
-    }
+    
     if (state2_Timer.get() > 4){
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
       cargo_status = Robot_Cargo_State.Idle;
-    
+    }
+
     intake_motor1.set(0.8); //running intake
     conveyer1.set(0.8); //running conveyer
     //shooter_motor1.set(1*0.8); //starting shooter at 80%
