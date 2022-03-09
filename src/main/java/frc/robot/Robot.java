@@ -96,6 +96,7 @@ public class Robot extends TimedRobot {
   private final double desiredDistanceFromGoal = 132; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private double pressureValue = 0;
   
+  
   @Override
   public void robotInit() {
 
@@ -163,6 +164,7 @@ public class Robot extends TimedRobot {
     pressureValue = phCompressor.getPressure();
     SmartDashboard.putNumber("PSI", pressureValue);
     SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
+    
 
   }
     
@@ -234,11 +236,11 @@ public class Robot extends TimedRobot {
         }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
-          //autoIntake(); // currently replaces manualIntake();
+          autoIntake(); // currently replaces manualIntake();
           //manualIntake(); 
           
-          IntakeTest1();
-          IntakeReverseTest();
+          //IntakeTest1();
+          //IntakeReverseTest();
         }
 
         // Read color sensor
@@ -254,7 +256,7 @@ public class Robot extends TimedRobot {
           colorString = "Unknown";
         }
         SmartDashboard.putString("color sensor output", colorString); */
-        SmartDashboard.putNumber("Timer", state4_Timer.get());
+        SmartDashboard.putNumber("Timer", state2_Timer.get());
 
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -405,7 +407,7 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
-      IntakeSolenoid.set(Value.kForward);
+      IntakeSolenoid.set(Value.kReverse);
       intake_status = Intake_Deployment_State.down;
     }
   }
@@ -446,7 +448,7 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
-      IntakeSolenoid.set(Value.kReverse);
+      IntakeSolenoid.set(Value.kForward);
       intake_status = Intake_Deployment_State.up;
     }  
   }
@@ -508,27 +510,27 @@ void climberTest() {
 }
 
 void IntakeTest1(){
-  if((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6) == true)){
+  if ((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6))){
     cargo_status = Robot_Cargo_State.Cargo_being_intaked;
     state2_Timer.start();
   }
-
-  if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-    if (driver_joystick.getRawButton(6) == true){
-      state2_Timer.start();
-    }
+  else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
+    //if (driver_joystick.getRawButton(6)){
+    //  state2_Timer.start();
+    //}
     
-    if (state2_Timer.get() > 4){
-      intake_motor1.set(0);
-      conveyer1.set(0);
-      shooter_motor1.set(0);
-      cargo_status = Robot_Cargo_State.Idle;
-    }
+    
 
     intake_motor1.set(0.8); //running intake
     conveyer1.set(0.8); //running conveyer
     //shooter_motor1.set(1*0.8); //starting shooter at 80%
     //shooter_motor1.set(ControlMode.Velocity, 18000);
+    if (state2_Timer.get()>4.0){
+      intake_motor1.set(0);
+      conveyer1.set(0);
+      shooter_motor1.set(0);
+      cargo_status = Robot_Cargo_State.Idle;
+    }
   } 
   else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
     cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
@@ -545,6 +547,7 @@ void IntakeReverseTest(){
     if (state2_Timer.get() > 4){
       intake_motor1.set(0);
       conveyer1.set(0);
+      cargo_status = Robot_Cargo_State.Idle;
     } 
   }
 }
