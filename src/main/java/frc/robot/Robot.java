@@ -296,35 +296,34 @@ public class Robot extends TimedRobot {
 
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
       if (driver_joystick.getRawButton(6) == true){
-        state2_Timer.start();
+        state2_Timer.reset();
       }
-      }
-      if (state2_Timer.get() > 4){
-        intake_motor1.set(0);
-        conveyer1.set(0);
-        shooter_motor1.set(0);
-        cargo_status = Robot_Cargo_State.Idle;
-      
       intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
       //shooter_motor1.set(1*0.8); //starting shooter at 80%
       shooter_motor1.set(ControlMode.Velocity, 18000);
-    } 
-    if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
+      if (state2_Timer.get() > 4.0) {
+        intake_motor1.set(0);
+        conveyer1.set(0);
+        shooter_motor1.set(0);
+        state2_Timer.stop();
+        cargo_status = Robot_Cargo_State.Idle;
+      }
+    }
+    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
       intake_motor1.set(0); //stopping intake
       conveyer1.set(0); //stopping conveyer
     }
-    else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
+    else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
       if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
       }
     }
-    else if (cargo_status == Robot_Cargo_State.Cargo_being_shot)
-    {
+    else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
       state4_Timer.start();
       conveyer1.set(0.8); //running conveyer 
-      if (state4_Timer.get() > 2){
+      if (state4_Timer.get() > 2.0) {
         conveyer1.set(0);
         shooter_motor1.set(0);
         state4_Timer.stop();
@@ -337,26 +336,23 @@ public class Robot extends TimedRobot {
    * This subroutine performs the robot operations manually
    *
    */
-  public void manualIntake(){
+  public void manualIntake() {
     if(driver_joystick.getRawButton(5) == true){
       intake_motor1.set(-1);
     }
     else if(driver_joystick.getRawButton(5) == false){
       intake_motor1.set(driver_joystick.getRawAxis(2));
     }
-    
-
     //Conveyor (positive inputs bring cargo in)
     if ((driver_joystick.getRawButton(4) == true) && (driver_joystick.getRawButton(2) == false)) {
       conveyer1.set(1);
     }
-    else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(2) == true){
+    else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(2) == true) {
       conveyer1.set(-1);
     }
     else {
       conveyer1.set(0);
     }
-
     //Shooter (positive inputs shoot cargo out)
     shooter_motor1.set(driver_joystick.getRawAxis(3)*0.8);
   }
@@ -367,6 +363,7 @@ public class Robot extends TimedRobot {
     Cargo_being_intaked,     // This state means that a cargo is in the process of being intaked, but still in transit
     Cargo_awaiting_shooter,    // This state means that a cargo is in the robot and awaiting to be shot out
     Cargo_being_shot,    // This state means that the cargo is being shot out
+    Ejecting,                 // This state means that the cargo is being ejected
     Error   // This is an error state or condition
   }
 
@@ -509,8 +506,8 @@ void climberTest() {
   climber_motor1.set(copilot_joystick.getRawAxis(5));
 }
 
-void IntakeTest1(){
-  if ((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6))){
+void IntakeTest1() {
+  if ((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6))) {
     cargo_status = Robot_Cargo_State.Cargo_being_intaked;
     state2_Timer.start();
   }
@@ -525,7 +522,7 @@ void IntakeTest1(){
     conveyer1.set(0.8); //running conveyer
     //shooter_motor1.set(1*0.8); //starting shooter at 80%
     //shooter_motor1.set(ControlMode.Velocity, 18000);
-    if (state2_Timer.get()>4.0){
+    if (state2_Timer.get() > 4.0) {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
@@ -539,14 +536,18 @@ void IntakeTest1(){
   }
 }
 
-void IntakeReverseTest(){
-  if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(3))){
+void IntakeReverseTest() {
+  if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(3))) {
     state2_Timer.start();
+    cargo_status = Robot_Cargo_State.Ejecting;
     intake_motor1.set(-0.8);
     conveyer1.set(-0.8);
-    if (state2_Timer.get() > 4){
+  }
+  else if (cargo_status == Robot_Cargo_State.Ejecting) {
+    if (state2_Timer.get() > 4.0) {
       intake_motor1.set(0);
       conveyer1.set(0);
+      state2_Timer.stop();
       cargo_status = Robot_Cargo_State.Idle;
     } 
   }
