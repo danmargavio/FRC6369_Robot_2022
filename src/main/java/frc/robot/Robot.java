@@ -16,9 +16,9 @@ import edu.wpi.first.cscore.UsbCamera;
 //import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.I2C;
-import com.revrobotics.ColorSensorV3;
-import com.revrobotics.ColorMatchResult;
-import com.revrobotics.ColorMatch;
+//import com.revrobotics.ColorSensorV3;
+//import com.revrobotics.ColorMatchResult;
+//import com.revrobotics.ColorMatch;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -96,6 +96,7 @@ public class Robot extends TimedRobot {
   private final double desiredDistanceFromGoal = 132; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private double pressureValue = 0;
   
+  
   @Override
   public void robotInit() {
 
@@ -163,6 +164,7 @@ public class Robot extends TimedRobot {
     pressureValue = phCompressor.getPressure();
     SmartDashboard.putNumber("PSI", pressureValue);
     SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
+    
 
   }
     
@@ -216,9 +218,15 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
         //climber test
-        climberTest();
+        //climberTest();
         //Compressor Test
-        compressorTest();
+        //compressorTest();
+        if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
+          moveIntakeDowntoUp();
+        }
+        if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
+          moveIntakeUptoDown();
+        }
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
@@ -230,6 +238,9 @@ public class Robot extends TimedRobot {
         if (intake_status == Intake_Deployment_State.down){
           autoIntake(); // currently replaces manualIntake();
           //manualIntake(); 
+          
+          //IntakeTest1();
+          //IntakeReverseTest();
         }
 
         // Read color sensor
@@ -245,7 +256,7 @@ public class Robot extends TimedRobot {
           colorString = "Unknown";
         }
         SmartDashboard.putString("color sensor output", colorString); */
-        SmartDashboard.putNumber("Timer", state4_Timer.get());
+        SmartDashboard.putNumber("Timer", state2_Timer.get());
 
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
         NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -396,7 +407,7 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
-      IntakeSolenoid.set(Value.kForward);
+      IntakeSolenoid.set(Value.kReverse);
       intake_status = Intake_Deployment_State.down;
     }
   }
@@ -437,7 +448,7 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0);
       conveyer1.set(0);
       shooter_motor1.set(0);
-      IntakeSolenoid.set(Value.kReverse);
+      IntakeSolenoid.set(Value.kForward);
       intake_status = Intake_Deployment_State.up;
     }  
   }
@@ -498,4 +509,46 @@ void climberTest() {
   climber_motor1.set(copilot_joystick.getRawAxis(5));
 }
 
+void IntakeTest1(){
+  if ((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6))){
+    cargo_status = Robot_Cargo_State.Cargo_being_intaked;
+    state2_Timer.start();
+  }
+  else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
+    //if (driver_joystick.getRawButton(6)){
+    //  state2_Timer.start();
+    //}
+    
+    
+
+    intake_motor1.set(0.8); //running intake
+    conveyer1.set(0.8); //running conveyer
+    //shooter_motor1.set(1*0.8); //starting shooter at 80%
+    //shooter_motor1.set(ControlMode.Velocity, 18000);
+    if (state2_Timer.get()>4.0){
+      intake_motor1.set(0);
+      conveyer1.set(0);
+      shooter_motor1.set(0);
+      cargo_status = Robot_Cargo_State.Idle;
+    }
+  } 
+  else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
+    cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+    intake_motor1.set(0); //stopping intake
+    conveyer1.set(0); //stopping conveyer
+  }
+}
+
+void IntakeReverseTest(){
+  if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(3))){
+    state2_Timer.start();
+    intake_motor1.set(-0.8);
+    conveyer1.set(-0.8);
+    if (state2_Timer.get() > 4){
+      intake_motor1.set(0);
+      conveyer1.set(0);
+      cargo_status = Robot_Cargo_State.Idle;
+    } 
+  }
+}
 }
