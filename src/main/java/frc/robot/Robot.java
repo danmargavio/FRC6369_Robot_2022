@@ -236,8 +236,8 @@ public class Robot extends TimedRobot {
         }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
-          autoIntake(); // currently replaces manualIntake();
-          //manualIntake(); 
+          //autoIntake(); // currently replaces manualIntake();
+          manualIntake(); 
           
           //IntakeTest1();
           //IntakeReverseTest();
@@ -355,7 +355,7 @@ public class Robot extends TimedRobot {
       conveyer1.set(0);
     }
     //Shooter (positive inputs shoot cargo out)
-    shooter_motor1.set(driver_joystick.getRawAxis(3)*0.8);
+    shooter_motor1.set(driver_joystick.getRawAxis(3)*0.9);
   }
 
   // This is is a custom type used to track the state of Cargo intake and shooting
