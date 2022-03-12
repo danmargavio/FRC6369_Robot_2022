@@ -92,13 +92,13 @@ public class Robot extends TimedRobot {
   private double tx_angle;
   private double ty_angle = -1000.0; //target degrees above the center of the camera 
 
-  private final double cameraPitch = 10; //degrees above horizon ||
+  private final double cameraPitch = 18.104; //degrees above horizon ||
   private final double pupilCameraHeight = 32.5; //inches above the ground ||
   private final double goalHeight = 104; //inches above the ground to the top of the goal
   private double distanceFromGoal = 0; //inches parallel from shooter to the center of the goal
   private final double goalRadius = 26.7716535; //inches 
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
-  private final double desiredDistanceFromGoal = 132; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
+  private final double desiredDistanceFromGoal = 168; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private double pressureValue = 0;
   
   
@@ -178,6 +178,10 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("PSI", pressureValue);
     SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Position", climberEncoder.get());
+    SmartDashboard.putNumber("distance", camAngletoDistance(ty_angle));
+    SmartDashboard.putNumber("Velocity of shooter", shooter_motor1.getSelectedSensorVelocity());
+    tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
+    ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
     
     
   }
@@ -192,29 +196,28 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     moveIntakeUptoDown();
-    tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
-    ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
+
     if (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal){
-      tarzan_robot.tankDrive(-1*0.8, -1*0.8);
+      tarzan_robot.tankDrive(0.4, 0.4);
     }
     else if (camAngletoDistance(ty_angle) > desiredDistanceFromGoal){
       /*if (Math.abs(tx_angle) > 0.5){
         tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
       }*/
-      autoAim();
-  
+      //autoAim();
+      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
     }
     if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
-      shooter_motor1.set(ControlMode.Velocity, 18000);
+      shooter_motor1.set(0.8);
       if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
+        state4_Timer.start();
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
       }
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_being_shot)
     {
-      state4_Timer.start();
       conveyer1.set(0.8); //running conveyer 
-      if (state4_Timer.get() > 2){
+      if (state4_Timer.get() > 2.0){
         conveyer1.set(0);
         shooter_motor1.set(0);
         state4_Timer.stop();
@@ -273,8 +276,6 @@ public class Robot extends TimedRobot {
         SmartDashboard.putString("color sensor output", colorString); */
         SmartDashboard.putNumber("Timer", state2_Timer.get());
 
-        tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
-        ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
         if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(8)){
           moveIntakeDowntoUp();
         }
