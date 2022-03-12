@@ -9,6 +9,8 @@ import java.lang.management.CompilationMXBean;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
+import com.ctre.phoenix.sensors.CANCoder;
+
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
@@ -19,6 +21,7 @@ import edu.wpi.first.wpilibj.I2C;
 //import com.revrobotics.ColorSensorV3;
 //import com.revrobotics.ColorMatchResult;
 //import com.revrobotics.ColorMatch;
+import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
@@ -51,7 +54,9 @@ public class Robot extends TimedRobot {
   private final WPI_TalonFX climber_motor2 = new WPI_TalonFX(15);
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
-  
+
+  private final DigitalInput climberEncoderData = new DigitalInput(1);
+  private final DutyCycleEncoder climberEncoder = new DutyCycleEncoder(climberEncoderData);
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
   private final Joystick copilot_joystick = new Joystick(1);
@@ -88,7 +93,7 @@ public class Robot extends TimedRobot {
   private double ty_angle = -1000.0; //target degrees above the center of the camera 
 
   private final double cameraPitch = 10; //degrees above horizon ||
-  private final double pupilCameraHeight = 12.8; //inches above the ground ||
+  private final double pupilCameraHeight = 32.5; //inches above the ground ||
   private final double goalHeight = 104; //inches above the ground to the top of the goal
   private double distanceFromGoal = 0; //inches parallel from shooter to the center of the goal
   private final double goalRadius = 26.7716535; //inches 
@@ -135,6 +140,13 @@ public class Robot extends TimedRobot {
 		shooter_motor1.config_kD(0, 0, 30);
     shooter_motor1.config_kF(0, 2048/22000, 30);
 
+
+    climber_motor1.configNeutralDeadband(0.001);
+		climber_motor1.config_kP(0, 0.015, 30);
+		climber_motor1.config_kI(0, 0.000, 30);
+		climber_motor1.config_kD(0, 0, 30);
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
+
     //Front camera one time setup
     //CameraServer.startAutomaticCapture();
 
@@ -153,6 +165,7 @@ public class Robot extends TimedRobot {
     LeftClimberSolenoid1.set(Value.kForward);
     LeftClimberSolenoid2.set(Value.kForward);
 
+    //climberEncoder.setPositionOffset();
   }
 
   @Override
@@ -164,8 +177,9 @@ public class Robot extends TimedRobot {
     pressureValue = phCompressor.getPressure();
     SmartDashboard.putNumber("PSI", pressureValue);
     SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
+    SmartDashboard.putNumber("Climber Arm Position", climberEncoder.get());
     
-
+    
   }
     
   @Override
@@ -212,7 +226,6 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     state4_Timer.start();
-    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
   }
 
   @Override
@@ -227,9 +240,11 @@ public class Robot extends TimedRobot {
         if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
           moveIntakeUptoDown();
         }
+
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         if (driver_joystick.getRawButton(2)){
           autoAim();
+
         }
         else{
           tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
@@ -258,8 +273,8 @@ public class Robot extends TimedRobot {
         SmartDashboard.putString("color sensor output", colorString); */
         SmartDashboard.putNumber("Timer", state2_Timer.get());
 
-        NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
-        NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
+        tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
+        ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
         if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(8)){
           moveIntakeDowntoUp();
         }
@@ -279,10 +294,16 @@ public class Robot extends TimedRobot {
   public void disabledPeriodic() {}
 
   @Override
-  public void testInit() {}
+  public void testInit() {
+    cargo_status = Robot_Cargo_State.Idle;
+  }
 
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+    compressorTest();
+    climberTest();
+    manualIntake();
+  }
 
     /**
    * This subroutine performs the semi-autonomous intake and shooting process
@@ -333,7 +354,7 @@ public class Robot extends TimedRobot {
     }  
   }
 
-      /**
+      /** 
    * This subroutine performs the robot operations manually
    *
    */
@@ -416,10 +437,10 @@ public class Robot extends TimedRobot {
    */
   void initiateMiddleRungClimb() {
     if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
-      climber_motor1.set(ControlMode.Position, 512);
-      if ((climber_motor1.getSelectedSensorVelocity() >= 500) && (shooter_motor1.getSelectedSensorVelocity() <= 520)){
-        LeftClimberSolenoid1.set(Value.kForward);
-        RightClimberSolenoid1.set(Value.kForward);
+      climber_motor1.set(ControlMode.Position, 186000);
+      if ((climber_motor1.getSelectedSensorPosition() >= 184000) && (shooter_motor1.getSelectedSensorPosition() <= 188000)){
+        LeftClimberSolenoid1.set(Value.kReverse);
+        RightClimberSolenoid1.set(Value.kReverse);
         Climber_status = Climber_State.part1ClimbMiddleRung;
       }
     }
@@ -431,8 +452,8 @@ public class Robot extends TimedRobot {
    */
   void finalizeMiddleRungClimb() {
     if (Climber_status == Climber_State.part1ClimbMiddleRung) {
-      LeftClimberSolenoid1.set(Value.kReverse);
-      RightClimberSolenoid1.set(Value.kReverse);
+      LeftClimberSolenoid1.set(Value.kForward);
+      RightClimberSolenoid1.set(Value.kForward);
       Climber_status = Climber_State.part2ClimbMiddleRung;
     }
   }
@@ -451,11 +472,11 @@ public class Robot extends TimedRobot {
     }  
   }
   void autoAim() {
-    if (Math.abs(tx_angle) > 5){
-      tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
-
+    if (Math.abs(tx_angle) > 5.0){
+      tarzan_robot.tankDrive(-1*tx_angle/27, 1*tx_angle/27);
+      System.out.println("autoAim");
     }
-    else if ((tx_angle >0.5) && (tx_angle<5)){
+    else if ((tx_angle >0.5) && (tx_angle < 5.0)){
       tarzan_robot.tankDrive(0.10, -0.10);
     }
     else if ((tx_angle > -5) && (tx_angle <-0.5)){
@@ -489,7 +510,7 @@ void compressorTest() {
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){   
     LeftClimberSolenoid2.set(Value.kReverse);
   }
-  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){ /* */
+  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
     RightClimberSolenoid2.set(Value.kForward);
   }
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
