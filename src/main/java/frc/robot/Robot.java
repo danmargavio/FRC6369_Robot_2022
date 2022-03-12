@@ -205,7 +205,11 @@ public class Robot extends TimedRobot {
         tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
       }*/
       //autoAim();
+<<<<<<< HEAD
       cargo_status = Robot_Cargo_State.Idle;
+=======
+      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+>>>>>>> 040cb13b53a0940d9d8694e5ad21205c473c88b8
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
       shooter_motor1.set(0.8);
