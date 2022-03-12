@@ -321,8 +321,7 @@ public class Robot extends TimedRobot {
       }
       intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
-      //shooter_motor1.set(1*0.8); //starting shooter at 80%
-      shooter_motor1.set(ControlMode.Velocity, 18000);
+      shooter_motor1.set(0.9);
       if (state2_Timer.get() > 4.0) {
         intake_motor1.set(0);
         conveyer1.set(0);
