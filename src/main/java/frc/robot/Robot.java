@@ -197,25 +197,24 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     moveIntakeUptoDown();
 
-    if (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal){
+    if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal)) {
       tarzan_robot.tankDrive(0.4, 0.4);
     }
-    else if (camAngletoDistance(ty_angle) > desiredDistanceFromGoal){
+    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) > desiredDistanceFromGoal)) {
       /*if (Math.abs(tx_angle) > 0.5){
         tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
       }*/
       //autoAim();
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
     }
-    if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter){
+    else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
       shooter_motor1.set(0.8);
-      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
+      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) {
         state4_Timer.start();
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
       }
     }
-    else if (cargo_status == Robot_Cargo_State.Cargo_being_shot)
-    {
+    else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
       conveyer1.set(0.8); //running conveyer 
       if (state4_Timer.get() > 2.0){
         conveyer1.set(0);
