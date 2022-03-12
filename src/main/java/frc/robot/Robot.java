@@ -253,7 +253,7 @@ public class Robot extends TimedRobot {
         }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
-          //autoIntake(); // currently replaces manualIntake();
+          autoIntake(); // currently replaces manualIntake();
           manualIntake(); 
           
           //IntakeTest1();
