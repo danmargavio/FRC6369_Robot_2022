@@ -339,11 +339,11 @@ public class Robot extends TimedRobot {
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
       if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
+        state4_Timer.start();
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
       }
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
-      state4_Timer.start();
       conveyer1.set(0.8); //running conveyer 
       if (state4_Timer.get() > 2.0) {
         conveyer1.set(0);
