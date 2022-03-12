@@ -366,10 +366,10 @@ public class Robot extends TimedRobot {
       intake_motor1.set(driver_joystick.getRawAxis(2));
     }
     //Conveyor (positive inputs bring cargo in)
-    if ((driver_joystick.getRawButton(4) == true) && (driver_joystick.getRawButton(2) == false)) {
+    if ((driver_joystick.getRawButton(4) == true) && (driver_joystick.getRawButton(3) == false)) {
       conveyer1.set(1);
     }
-    else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(2) == true) {
+    else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(3) == true) {
       conveyer1.set(-1);
     }
     else {
@@ -472,15 +472,15 @@ public class Robot extends TimedRobot {
     }  
   }
   void autoAim() {
-    if (Math.abs(tx_angle) > 5.0){
-      tarzan_robot.tankDrive(-1*tx_angle/27, 1*tx_angle/27);
-      System.out.println("autoAim");
+    if (Math.abs(tx_angle) > 10.0){
+      tarzan_robot.tankDrive(0.6*tx_angle/27, -0.6*tx_angle/27);
+      
     }
-    else if ((tx_angle >0.5) && (tx_angle < 5.0)){
-      tarzan_robot.tankDrive(0.10, -0.10);
+    else if ((tx_angle >0.5) && (tx_angle < 10.0)){
+      tarzan_robot.tankDrive(0.30, -0.30);
     }
-    else if ((tx_angle > -5) && (tx_angle <-0.5)){
-      tarzan_robot.tankDrive(-0.10, 0.10);
+    else if ((tx_angle > -10) && (tx_angle <-0.5)){
+      tarzan_robot.tankDrive(-0.30, 0.30);
     }
     else{
       tarzan_robot.tankDrive(0, 0);
