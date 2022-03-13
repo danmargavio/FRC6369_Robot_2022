@@ -229,7 +229,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    state4_Timer.start();
     cargo_status = Robot_Cargo_State.Idle;
   }
 
@@ -349,15 +348,15 @@ public class Robot extends TimedRobot {
       }
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (driver_joystick.getRawButton(3) == false)) {
-      shooter_motor1.set(0.0); 
+      shooter_motor1.set(0.0);
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_shot) && (driver_joystick.getRawButton(3))) {
       conveyer1.set(0.8); //running conveyer 
-      if (state4_Timer.get() > 2.0){
+      if (state4_Timer.get() > 1.5){
         conveyer1.set(0);
         shooter_motor1.set(0);
         state4_Timer.stop();
-        cargo_status = Robot_Cargo_State.Cargo_being_intaked;
+        cargo_status = Robot_Cargo_State.Idle;
       }
     }
 
