@@ -71,10 +71,10 @@ public class Robot extends TimedRobot {
   // Setup the pneumatics devices, 
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
   DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 15); /* Make sure channel number associates with kReverse and Forward Ex: Channel 6 brings down (kReverse) and vice versa with channel 7*/
-  DoubleSolenoid LeftClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 11); //Kforward is Retract and KReverse is Extend
-  DoubleSolenoid RightClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 1, 14);
-  DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
-  DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
+  DoubleSolenoid RightClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 11); //Kforward is Retract and KReverse is Extend
+  DoubleSolenoid LeftClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 1, 14);
+  DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
+  DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
 
   // Setup the ADIS16448 IMU
   public static final ADIS16448_IMU gyro = new ADIS16448_IMU();
@@ -102,6 +102,7 @@ public class Robot extends TimedRobot {
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
   private final double desiredDistanceFromGoal = 168; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private double pressureValue = 0;
+  private double climberArmAngle = 0;
   
   
   @Override
@@ -147,6 +148,9 @@ public class Robot extends TimedRobot {
 		climber_motor1.config_kP(0, 0.015, 30);
 		climber_motor1.config_kI(0, 0.000, 30);
 		climber_motor1.config_kD(0, 0, 30);
+    climber_motor1.set(ControlMode.Position, 0.0);
+
+
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
 
@@ -173,18 +177,16 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotPeriodic() {
-
     //SmartDashboard.putNumber("RED", color_sensor.getRed());
     //SmartDashboard.putNumber("BLUE", color_sensor.getBlue());
     //SmartDashboard.putNumber("GREEN", color_sensor.getGreen());
     SmartDashboard.putNumber("PSI", phCompressor.getPressure());
     SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Position", climberEncoder.get());
+    climberArmAngle = climberEncoder.get()*360 - 117.36;    // Convert encoder to degrees than subtract offet so it reads 0.0 deg when horizontal
     SmartDashboard.putNumber("distance", camAngletoDistance(ty_angle));
     SmartDashboard.putNumber("Local Climber Position", climber_motor1.getSelectedSensorPosition());
     SmartDashboard.putNumber("Robot Base Pitch", gyro.getGyroAngleY()); // this is robot pitch (front to back)
-    SmartDashboard.putNumber("Timer 2", state2_Timer.get());
-    SmartDashboard.putNumber("Timer 4", state4_Timer.get());
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
   }
