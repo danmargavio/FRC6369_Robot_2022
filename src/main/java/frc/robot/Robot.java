@@ -30,6 +30,7 @@ import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
+import edu.wpi.first.wpilibj.ADIS16448_IMU;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -75,7 +76,8 @@ public class Robot extends TimedRobot {
   DoubleSolenoid RightClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 1, 14);
   DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
   DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
-  
+
+  ADIS16448_IMU gyro = new ADIS16448_IMU();  
 
   // Setup the color sensor
   //private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
@@ -179,11 +181,13 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Position", climberEncoder.get());
     SmartDashboard.putNumber("distance", camAngletoDistance(ty_angle));
-    SmartDashboard.putNumber("Velocity of shooter", shooter_motor1.getSelectedSensorVelocity());
+    SmartDashboard.putNumber("Local Climber Position", climber_motor1.getSelectedSensorPosition());
+    SmartDashboard.putNumber("RioX", gyro.getGyroAngleX());
+    SmartDashboard.putNumber("RioY", gyro.getGyroAngleY());
+    SmartDashboard.putNumber("RioZ", gyro.getGyroAngleZ());
+
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
-    
-    
   }
     
   @Override
@@ -254,7 +258,7 @@ public class Robot extends TimedRobot {
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
           autoIntake(); // currently replaces manualIntake();
-          manualIntake(); 
+          //manualIntake(); 
           
           //IntakeTest1();
           //IntakeReverseTest();
@@ -300,9 +304,10 @@ public class Robot extends TimedRobot {
 
   @Override
   public void testPeriodic() {
+    tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
     compressorTest();
     climberTest();
-    manualIntake();
+    //manualIntake();
   }
 
     /**
@@ -492,29 +497,33 @@ public class Robot extends TimedRobot {
 }
 void compressorTest() {
   if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 0)){
-    LeftClimberSolenoid1.set(Value.kForward);
+    LeftClimberSolenoid1.set(Value.kForward); //right1 solenoid retract
+    RightClimberSolenoid1.set(Value.kForward); //left1 solenoid retract
   }  
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 0)){
-    LeftClimberSolenoid1.set(Value.kReverse);
+    LeftClimberSolenoid1.set(Value.kReverse); //right1 solenoid extend
+    RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
   }
-  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 90)){
-    RightClimberSolenoid1.set(Value.kForward);
-  }
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 90)){
-    RightClimberSolenoid1.set(Value.kReverse);
-  }
+  //else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 90)){
+  //  RightClimberSolenoid1.set(Value.kForward); //left1 solenoid retract
+ // }
+  //else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 90)){
+  //  RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
+  //}
   else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
-    LeftClimberSolenoid2.set(Value.kForward);
+    LeftClimberSolenoid2.set(Value.kForward); //right2 solenoid retract
+    RightClimberSolenoid2.set(Value.kForward); //left2 solenoid retract
   }
   else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){   
-    LeftClimberSolenoid2.set(Value.kReverse);
+    LeftClimberSolenoid2.set(Value.kReverse); //right2 solenoid extend
+    RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
   }
-  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
-    RightClimberSolenoid2.set(Value.kForward);
-  }
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
-    RightClimberSolenoid2.set(Value.kReverse);
-  }
+  //else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
+    
+ // }
+  //else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
+  //  RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
+  //}
   else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(4)){
     IntakeSolenoid.set(Value.kForward);
   }  
