@@ -5,32 +5,31 @@
 package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 
-import java.lang.management.CompilationMXBean;
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
-import com.ctre.phoenix.sensors.CANCoder;
+//import com.ctre.phoenix.sensors.CANCoder;
 
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.cscore.UsbCamera;
+//import edu.wpi.first.cscore.UsbCamera;
 //import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.I2C;
+//import edu.wpi.first.wpilibj.I2C;
 //import com.revrobotics.ColorSensorV3;
 //import com.revrobotics.ColorMatchResult;
 //import com.revrobotics.ColorMatch;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
-import edu.wpi.first.wpilibj.util.Color;
+//import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.networktables.*;
-import edu.wpi.first.wpilibj.Solenoid;
+//import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.ADIS16448_IMU;
+//import com.analog.adis16448.frc.ADIS16448_IMU;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -64,7 +63,7 @@ public class Robot extends TimedRobot {
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
 
   // Creates UsbCamera
-  UsbCamera driver_camera = new UsbCamera("USB Camera 0", 0);
+  //UsbCamera driver_camera = new UsbCamera("USB Camera 0", 0);
 
   /// Setup the digital inputs
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
@@ -77,7 +76,8 @@ public class Robot extends TimedRobot {
   DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
   DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
 
-  ADIS16448_IMU gyro = new ADIS16448_IMU();  
+  // Setup the ADIS16448 IMU
+  public static final ADIS16448_IMU gyro = new ADIS16448_IMU();
 
   // Setup the color sensor
   //private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
@@ -148,6 +148,7 @@ public class Robot extends TimedRobot {
 		climber_motor1.config_kI(0, 0.000, 30);
 		climber_motor1.config_kD(0, 0, 30);
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
 
     //Front camera one time setup
     //CameraServer.startAutomaticCapture();
@@ -166,8 +167,8 @@ public class Robot extends TimedRobot {
     RightClimberSolenoid2.set(Value.kForward);
     LeftClimberSolenoid1.set(Value.kForward);
     LeftClimberSolenoid2.set(Value.kForward);
-
     //climberEncoder.setPositionOffset();
+    
   }
 
   @Override
@@ -176,15 +177,12 @@ public class Robot extends TimedRobot {
     //SmartDashboard.putNumber("RED", color_sensor.getRed());
     //SmartDashboard.putNumber("BLUE", color_sensor.getBlue());
     //SmartDashboard.putNumber("GREEN", color_sensor.getGreen());
-    pressureValue = phCompressor.getPressure();
-    SmartDashboard.putNumber("PSI", pressureValue);
+    SmartDashboard.putNumber("PSI", phCompressor.getPressure());
     SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Position", climberEncoder.get());
     SmartDashboard.putNumber("distance", camAngletoDistance(ty_angle));
     SmartDashboard.putNumber("Local Climber Position", climber_motor1.getSelectedSensorPosition());
-    SmartDashboard.putNumber("RioX", gyro.getGyroAngleX());
-    SmartDashboard.putNumber("RioY", gyro.getGyroAngleY());
-    SmartDashboard.putNumber("RioZ", gyro.getGyroAngleZ());
+    SmartDashboard.putNumber("Robot Base Pitch", gyro.getGyroAngleY()); // this is robot pitch (front to back)
 
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -212,7 +210,7 @@ public class Robot extends TimedRobot {
       cargo_status = Robot_Cargo_State.Idle;
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
-      shooter_motor1.set(0.8);
+      shooter_motor1.set(0.9);
       if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) {
         state4_Timer.start();
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
@@ -232,6 +230,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     state4_Timer.start();
+    cargo_status = Robot_Cargo_State.Idle;
   }
 
   @Override
@@ -279,14 +278,12 @@ public class Robot extends TimedRobot {
         SmartDashboard.putString("color sensor output", colorString); */
         SmartDashboard.putNumber("Timer", state2_Timer.get());
 
-        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(8)){
-          moveIntakeDowntoUp();
-        }
+        autoShoot(); //shoot
+
         if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
           initiateMiddleRungClimb();
         }
         if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
-          
           finalizeMiddleRungClimb();
         }
   }
@@ -307,7 +304,7 @@ public class Robot extends TimedRobot {
     tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
     compressorTest();
     climberTest();
-    //manualIntake();
+    manualIntake();
   }
 
     /**
@@ -315,18 +312,18 @@ public class Robot extends TimedRobot {
    *
    */
   public void autoIntake() {
-    if((cargo_status == Robot_Cargo_State.Idle) && (driver_joystick.getRawButton(6) == true)){
+    if((cargo_status == Robot_Cargo_State.Idle) && (driver_joystick.getRawButton(5) == true)){
       cargo_status = Robot_Cargo_State.Cargo_being_intaked;
       state2_Timer.start();
     }
 
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-      if (driver_joystick.getRawButton(6) == true){
+      if (driver_joystick.getRawButton(5) == true){
         state2_Timer.reset();
       }
       intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
-      shooter_motor1.set(0.9);
+      //shooter_motor1.set(0.9);
       if (state2_Timer.get() > 4.0) {
         intake_motor1.set(0);
         conveyer1.set(0);
@@ -341,22 +338,32 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0); //stopping intake
       conveyer1.set(0); //stopping conveyer
     }
-    else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
-      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)){
+  }
+
+  public void autoShoot() {
+    if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (driver_joystick.getRawButton(3))) {
+      shooter_motor1.set(0.9);
+      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) {
         state4_Timer.start();
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
       }
     }
-    else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
+    else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (driver_joystick.getRawButton(3) == false)) {
+      shooter_motor1.set(0.0); 
+    }
+    else if ((cargo_status == Robot_Cargo_State.Cargo_being_shot) && (driver_joystick.getRawButton(3))) {
       conveyer1.set(0.8); //running conveyer 
-      if (state4_Timer.get() > 2.0) {
+      if (state4_Timer.get() > 2.0){
         conveyer1.set(0);
         shooter_motor1.set(0);
         state4_Timer.stop();
-        cargo_status = Robot_Cargo_State.Idle;
+        cargo_status = Robot_Cargo_State.Cargo_being_intaked;
       }
-    }  
+    }
+
   }
+
+
 
       /** 
    * This subroutine performs the robot operations manually
