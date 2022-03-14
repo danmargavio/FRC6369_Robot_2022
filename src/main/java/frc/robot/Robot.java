@@ -248,7 +248,7 @@ public class Robot extends TimedRobot {
 
         }
         else{
-          tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5)); //nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
+          nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
         }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
@@ -294,7 +294,7 @@ public class Robot extends TimedRobot {
   @Override
   public void testInit() {
     cargo_status = Robot_Cargo_State.Idle;
-    //updateClimberMotorPosition(); // Test it first without this, then add it in
+    updateClimberMotorPosition(); // Test it first without this, then add it in
   }
 
   @Override
@@ -316,7 +316,7 @@ public class Robot extends TimedRobot {
       moveIntakeUptoDown();
     }
     climberTest2();
-    //updateClimberMotorPosition(); // Test it first without this, then add it in
+    updateClimberMotorPosition(); // Test it first without this, then add it in
     //manualIntake();      // temporarily deactivate because it interfers with climberTest2() controls
   }
 
@@ -617,7 +617,7 @@ public class Robot extends TimedRobot {
   }
 
   void nonlinearDrive(double x, double y) { //x = driver_joystick.getRawAxis(1) && y = driver_joystick.getRawAxis(5)
-    tarzan_robot.tankDrive(-0.5*Math.signum(x)*Math.pow(x,2), -0.5*Math.signum(y)*Math.pow(y,2));
+    tarzan_robot.tankDrive(-1*Math.signum(x)*Math.pow(x,2), -1*Math.signum(y)*Math.pow(y,2));
   }
 
   /**
