@@ -179,7 +179,7 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     state4_Timer.start();
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
-    cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+    cargo_status = Robot_Cargo_State.Cargo_being_intaked;
   }
 
   @Override
@@ -194,7 +194,7 @@ public class Robot extends TimedRobot {
         tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
       }*/
       //autoAim();
-      cargo_status = Robot_Cargo_State.Idle;
+      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
       shooter_motor1.set(0.9);
@@ -209,7 +209,7 @@ public class Robot extends TimedRobot {
         conveyer1.set(0);
         shooter_motor1.set(0);
         state4_Timer.stop();
-        cargo_status = Robot_Cargo_State.Cargo_being_intaked;
+        cargo_status = Robot_Cargo_State.Idle;
       }
     }
   }
@@ -223,22 +223,23 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     /**
     *           COPILOT JOYSTICK
-    * Back (button 7) AND X (button 3) = Move Intake Up
-    * Back (button 7) AND A (button 1) = Move Intake Down
-    *
+    * Back (button 7) AND X (button 3) = Prepare for Middle Rung Climb
+    * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
+
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side
+    * Back (button 7) AND X (button 3) = Move Intake Up
+    * Back (button 7) AND A (button 1) = Move Intake Down
     * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)
     * B (button 2) = Run AutoAim function while holding
     * X (button 3) = Perform Autoshoot function while holding (completes after 1.5 seconds)
-    * Back (button 7) AND X (button 3) = Prepare for Middle Rung Climb
-    * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
+    
     **/
-        if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
+        if (driver_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
           moveIntakeDowntoUp();
         }
-        if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
+        if (driver_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
           moveIntakeUptoDown();
         }
 
@@ -277,10 +278,10 @@ public class Robot extends TimedRobot {
 
         autoShoot(); //shoot
 
-        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
+        if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
           initiateMiddleRungClimb();
         }
-        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
+        if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
           finalizeMiddleRungClimb();
         }
   }
