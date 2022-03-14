@@ -7,13 +7,9 @@ import edu.wpi.first.wpilibj.TimedRobot;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
-//import com.ctre.phoenix.sensors.CANCoder;
-
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
-//import edu.wpi.first.cscore.UsbCamera;
-//import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.DigitalInput;
 //import edu.wpi.first.wpilibj.I2C;
 //import com.revrobotics.ColorSensorV3;
@@ -24,12 +20,10 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.networktables.*;
-//import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.ADIS16448_IMU;
-//import com.analog.adis16448.frc.ADIS16448_IMU;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -61,9 +55,6 @@ public class Robot extends TimedRobot {
   private final Joystick driver_joystick = new Joystick(0);
   private final Joystick copilot_joystick = new Joystick(1);
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
-
-  // Creates UsbCamera
-  //UsbCamera driver_camera = new UsbCamera("USB Camera 0", 0);
 
   /// Setup the digital inputs
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
@@ -110,8 +101,6 @@ public class Robot extends TimedRobot {
   
   @Override
   public void robotInit() {
-
-
     shooter_motor1.configFactoryDefault();
     shooter_motor2.configFactoryDefault();
     driver_leftmotor1.configFactoryDefault();
@@ -131,12 +120,10 @@ public class Robot extends TimedRobot {
     conveyer1.setInverted(true);
     intake_motor1.setInverted(true);
 
-    //Shooter and Driver Follow
+    //Shooter, Driver, Climber Follow
     shooter_motor2.follow(shooter_motor1);
     driver_rightmotor2.follow(driver_rightmotor1);
     driver_leftmotor2.follow(driver_leftmotor1);
-
-    //Climber Follow
     climber_motor2.follow(climber_motor1);
 
     // Shooter Control Loop Settings
@@ -146,19 +133,15 @@ public class Robot extends TimedRobot {
 		shooter_motor1.config_kD(0, 0, 30);
     shooter_motor1.config_kF(0, 2048/22000, 30);
 
-
     climber_motor1.configNeutralDeadband(0.001);
 		climber_motor1.config_kP(0, 0.015, 30);
 		climber_motor1.config_kI(0, 0.000, 30);
 		climber_motor1.config_kD(0, 0, 30);
     climber_motor1.set(ControlMode.Position, 0.0);
 
-
+    // configure limelight camera
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
-
-    //Front camera one time setup
-    //CameraServer.startAutomaticCapture();
 
     //Setup color sensor
     //m_colorMatcher.addColorMatch(kBlueTarget);
@@ -173,9 +156,7 @@ public class Robot extends TimedRobot {
     RightClimberSolenoid1.set(Value.kForward);
     RightClimberSolenoid2.set(Value.kForward);
     LeftClimberSolenoid1.set(Value.kForward);
-    LeftClimberSolenoid2.set(Value.kForward);
-    //climberEncoder.setPositionOffset();
-    
+    LeftClimberSolenoid2.set(Value.kForward);    
   }
 
   @Override
@@ -240,10 +221,20 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-        //climber test
-        //climberTest();
-        //Compressor Test
-        //compressorTest();
+    /**
+    *           COPILOT JOYSTICK
+    * Back (button 7) AND X (button 3) = Move Intake Up
+    * Back (button 7) AND A (button 1) = Move Intake Down
+    *
+    *           PILOT JOYSTICK
+    * Left Stick Up/Down (raw axis 1) = Move Robot left side
+    * Right Stick Up/Down (raw axis 5) = Move Robot right side
+    * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)
+    * B (button 2) = Run AutoAim function while holding
+    * X (button 3) = Perform Autoshoot function while holding (completes after 1.5 seconds)
+    * Back (button 7) AND X (button 3) = Prepare for Middle Rung Climb
+    * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
+    **/
         if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
           moveIntakeDowntoUp();
         }
@@ -346,7 +337,6 @@ public class Robot extends TimedRobot {
       }
       intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
-      //shooter_motor1.set(0.9);
       if (state2_Timer.get() > 4.0) {
         intake_motor1.set(0);
         conveyer1.set(0);
@@ -386,7 +376,6 @@ public class Robot extends TimedRobot {
         cargo_status = Robot_Cargo_State.Idle;
       }
     }
-
   }
 
   /*public void autoReverse(){
@@ -400,8 +389,6 @@ public class Robot extends TimedRobot {
     }
   
   }  */
-
-
 
       /** 
    * This subroutine performs the robot operations manually
@@ -527,10 +514,10 @@ public class Robot extends TimedRobot {
       intake_status = Intake_Deployment_State.up;
     }  
   }
+
   void autoAim() {
     if (Math.abs(tx_angle) > 10.0){
       tarzan_robot.tankDrive(0.6*tx_angle/27, -0.6*tx_angle/27);
-      
     }
     else if ((tx_angle >0.5) && (tx_angle < 10.0)){
       tarzan_robot.tankDrive(0.30, -0.30);
@@ -541,174 +528,171 @@ public class Robot extends TimedRobot {
     else{
       tarzan_robot.tankDrive(0, 0);
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+    }
   }
-}
-void compressorTest() {
-  if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 0)){
-    LeftClimberSolenoid1.set(Value.kForward); //right1 solenoid retract
-    RightClimberSolenoid1.set(Value.kForward); //left1 solenoid retract
-  }  
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 0)){
-    LeftClimberSolenoid1.set(Value.kReverse); //right1 solenoid extend
-    RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
-  }
-  //else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 90)){
-  //  RightClimberSolenoid1.set(Value.kForward); //left1 solenoid retract
- // }
-  //else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 90)){
-  //  RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
-  //}
-  else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
-    LeftClimberSolenoid2.set(Value.kForward); //right2 solenoid retract
-    RightClimberSolenoid2.set(Value.kForward); //left2 solenoid retract
-  }
-  else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){   
-    LeftClimberSolenoid2.set(Value.kReverse); //right2 solenoid extend
-    RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
-  }
-  //else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
-    
- // }
-  //else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
-  //  RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
-  //}
-  else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(4)){
-    IntakeSolenoid.set(Value.kForward);
-  }  
-  else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(2)){
-    IntakeSolenoid.set(Value.kReverse);
-  }
-}
 
-void climberTest() {
-  climber_motor1.set(copilot_joystick.getRawAxis(5));
-}
-
-void IntakeTest1() {
-  if ((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6))) {
-    cargo_status = Robot_Cargo_State.Cargo_being_intaked;
-    state2_Timer.start();
-  }
-  else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-    //if (driver_joystick.getRawButton(6)){
-    //  state2_Timer.start();
+  void compressorTest() {
+    if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 0)){
+      LeftClimberSolenoid1.set(Value.kForward); //right1 solenoid retract
+      RightClimberSolenoid1.set(Value.kForward); //left1 solenoid retract
+    }  
+    else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 0)){
+      LeftClimberSolenoid1.set(Value.kReverse); //right1 solenoid extend
+      RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
+    }
+    //else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 90)){
+    //  RightClimberSolenoid1.set(Value.kForward); //left1 solenoid retract
+  // }
+    //else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 90)){
+    //  RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
     //}
-    
-    
-
-    intake_motor1.set(0.8); //running intake
-    conveyer1.set(0.8); //running conveyer
-    //shooter_motor1.set(1*0.8); //starting shooter at 80%
-    //shooter_motor1.set(ControlMode.Velocity, 18000);
-    if (state2_Timer.get() > 4.0) {
-      intake_motor1.set(0);
-      conveyer1.set(0);
-      shooter_motor1.set(0);
-      cargo_status = Robot_Cargo_State.Idle;
+    else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
+      LeftClimberSolenoid2.set(Value.kForward); //right2 solenoid retract
+      RightClimberSolenoid2.set(Value.kForward); //left2 solenoid retract
     }
-  } 
-  else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
-    cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
-    intake_motor1.set(0); //stopping intake
-    conveyer1.set(0); //stopping conveyer
+    else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){   
+      LeftClimberSolenoid2.set(Value.kReverse); //right2 solenoid extend
+      RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
+    }
+    //else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
+      
+  // }
+    //else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
+    //  RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
+    //}
+    else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(4)){
+      IntakeSolenoid.set(Value.kForward);
+    }  
+    else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(2)){
+      IntakeSolenoid.set(Value.kReverse);
+    }
   }
-}
 
-void IntakeReverseTest() {
-  if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(3))) {
-    state2_Timer.start();
-    cargo_status = Robot_Cargo_State.Ejecting;
-    intake_motor1.set(-0.8);
-    conveyer1.set(-0.8);
+  void climberTest() {
+    climber_motor1.set(copilot_joystick.getRawAxis(5));
   }
-  else if (cargo_status == Robot_Cargo_State.Ejecting) {
-    if (state2_Timer.get() > 4.0) {
-      intake_motor1.set(0);
-      conveyer1.set(0);
-      state2_Timer.stop();
-      cargo_status = Robot_Cargo_State.Idle;
+
+  void IntakeTest1() {
+    if ((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6))) {
+      cargo_status = Robot_Cargo_State.Cargo_being_intaked;
+      state2_Timer.start();
+    }
+    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
+      //if (driver_joystick.getRawButton(6)){
+      //  state2_Timer.start();
+      //}
+      intake_motor1.set(0.8); //running intake
+      conveyer1.set(0.8); //running conveyer
+      //shooter_motor1.set(1*0.8); //starting shooter at 80%
+      //shooter_motor1.set(ControlMode.Velocity, 18000);
+      if (state2_Timer.get() > 4.0) {
+        intake_motor1.set(0);
+        conveyer1.set(0);
+        shooter_motor1.set(0);
+        cargo_status = Robot_Cargo_State.Idle;
+      }
     } 
-  }
-}
-
-void nonlinearDrive(double x, double y) { //x = driver_joystick.getRawAxis(1) && y = driver_joystick.getRawAxis(5)
-  tarzan_robot.tankDrive(-0.5*Math.signum(x)*Math.pow(x,2), -0.5*Math.signum(y)*Math.pow(y,2));
-}
-
-/**
-   * This method provides controls to the copilot to manually manipulate the climber in a controlled way.
-   *
-   *        COPILOT JOYSTICK
-   * Right Trigger (raw axis 3) = Rotate the climber forwards at 5 degrees per second.
-   * Left Trigger (raw axis 2) = Rotate the climber backwards at 5 degrees per second. 
-   * Y (button 4) = Left 1 and Right 1 Extend.
-   * B (button 2) = Left 1 and Right 1 Retract.
-   * X (button 3) = Left 2 and Right 2 Extend.
-   * A (button 1) = Left 2 and Right 2 Retract.
-   *
-   */
-void climberTest2() {
-  if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
-    // the following allows the copilot to move the climber arms together either forward or background by holding either
-    // of the shoulder trigger buttons. The harder you press, the further it changes. Every 20 msec, at full press, the
-    // climber would change ~200 counts or ~10000 counts (5 degrees) per second.
-    climberArmCommand = climberArmCommand + 200*copilot_joystick.getRawAxis(3) - 200*copilot_joystick.getRawAxis(2);
-
-    //      CLIMBER ARM COMMAND CLAMPING LOGIC
-    // the following block of code ensures that the climber arms can never be driven beyond safe operating ranges
-    // if the driver attempts to command beyond the safe limit, only the min/max safe command is applied
-    if (climberArmCommand < minimum_climber_limit) {
-      climberArmCommand = minimum_climber_limit;
-    }
-    else if (climberArmCommand > maximum_climber_limit) {
-      climberArmCommand = maximum_climber_limit;
-    }
-
-    // this actually applies the climber arm command to the control loop
-    climber_motor1.set(ControlMode.Position, climberArmCommand);
-
-    // this allows the copilot to command the climber arm pistons (a pair at a time) by pressing the four face buttons
-    // Y (button 4) = Left 1 and Right 1 Extend
-    // B (button 2) = Left 1 and Right 1 Retract
-    // X (button 3) = Left 2 and Right 2 Extend
-    // A (button 1) = Left 2 and Right 2 Retract
-
-    if (copilot_joystick.getRawButton(4)) {
-      LeftClimberSolenoid1.set(Value.kReverse);
-      RightClimberSolenoid1.set(Value.kReverse);
-    }
-    if (copilot_joystick.getRawButton(2)) {
-      LeftClimberSolenoid1.set(Value.kForward);
-      RightClimberSolenoid1.set(Value.kForward);
-    }
-    if (copilot_joystick.getRawButton(3)) {
-      LeftClimberSolenoid2.set(Value.kReverse);
-      RightClimberSolenoid2.set(Value.kReverse);
-    }
-    if (copilot_joystick.getRawButton(1)) {
-      LeftClimberSolenoid2.set(Value.kForward);
-      RightClimberSolenoid2.set(Value.kForward);
+    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
+      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+      intake_motor1.set(0); //stopping intake
+      conveyer1.set(0); //stopping conveyer
     }
   }
-}
 
-/**
-   * This method updates the relative position sense of the climber 1 motor to match the true position at the
-   * climber arm shaft
-   *
-   */
-void updateClimberMotorPosition() {
-  // climberEncoder.get() returns the true climber arm shaft angle. * by 360 converts it to degrees. Subtracting
-  // 117.36 is based on measurements that offset the angle so that it reads 0 when the climber is horizontal
-  // and in the starting configuration. Finally, we * 2044.4 (need to verify) to convert degrees at the climber motor
-  // shaft into counts.  This will adjust the position of the climber motor shaft so that it matches what the actual
-  // position of the climber arm shaft and effectively corrects for any slip or incorrect positioning before the
-  // robot is turned on (recall that the arm is supposed to start in a horizontal position.
+  void IntakeReverseTest() {
+    if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(3))) {
+      state2_Timer.start();
+      cargo_status = Robot_Cargo_State.Ejecting;
+      intake_motor1.set(-0.8);
+      conveyer1.set(-0.8);
+    }
+    else if (cargo_status == Robot_Cargo_State.Ejecting) {
+      if (state2_Timer.get() > 4.0) {
+        intake_motor1.set(0);
+        conveyer1.set(0);
+        state2_Timer.stop();
+        cargo_status = Robot_Cargo_State.Idle;
+      } 
+    }
+  }
 
-  // Here is an example. If the robot were mistakenly started with the arms vertical, the climberEncoder.get() would
-  // return a 0.576 (based on test measurements). This would get converted to ~184000 and overwrite the climber motor 1
-  // position from 0 to 184000, thereby re-aligning the two. If slip between the two were to occur during the match,
-  // calling this function periodically would also correct for those misalignments as well.
-  climber_motor1.setSelectedSensorPosition(2044.4*(climberEncoder.get()*360 - 117.36));
-}
+  void nonlinearDrive(double x, double y) { //x = driver_joystick.getRawAxis(1) && y = driver_joystick.getRawAxis(5)
+    tarzan_robot.tankDrive(-0.5*Math.signum(x)*Math.pow(x,2), -0.5*Math.signum(y)*Math.pow(y,2));
+  }
+
+  /**
+     * This method provides controls to the copilot to manually manipulate the climber in a controlled way.
+     *
+     *        COPILOT JOYSTICK
+     * Right Trigger (raw axis 3) = Rotate the climber forwards at 5 degrees per second.
+     * Left Trigger (raw axis 2) = Rotate the climber backwards at 5 degrees per second. 
+     * Y (button 4) = Left 1 and Right 1 Extend.
+     * B (button 2) = Left 1 and Right 1 Retract.
+     * X (button 3) = Left 2 and Right 2 Extend.
+     * A (button 1) = Left 2 and Right 2 Retract.
+     *
+     */
+  void climberTest2() {
+    if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
+      // the following allows the copilot to move the climber arms together either forward or background by holding either
+      // of the shoulder trigger buttons. The harder you press, the further it changes. Every 20 msec, at full press, the
+      // climber would change ~200 counts or ~10000 counts (5 degrees) per second.
+      climberArmCommand = climberArmCommand + 200*copilot_joystick.getRawAxis(3) - 200*copilot_joystick.getRawAxis(2);
+
+      //      CLIMBER ARM COMMAND CLAMPING LOGIC
+      // the following block of code ensures that the climber arms can never be driven beyond safe operating ranges
+      // if the driver attempts to command beyond the safe limit, only the min/max safe command is applied
+      if (climberArmCommand < minimum_climber_limit) {
+        climberArmCommand = minimum_climber_limit;
+      }
+      else if (climberArmCommand > maximum_climber_limit) {
+        climberArmCommand = maximum_climber_limit;
+      }
+
+      // this actually applies the climber arm command to the control loop
+      climber_motor1.set(ControlMode.Position, climberArmCommand);
+
+      // this allows the copilot to command the climber arm pistons (a pair at a time) by pressing the four face buttons
+      // Y (button 4) = Left 1 and Right 1 Extend
+      // B (button 2) = Left 1 and Right 1 Retract
+      // X (button 3) = Left 2 and Right 2 Extend
+      // A (button 1) = Left 2 and Right 2 Retract
+      if (copilot_joystick.getRawButton(4)) {
+        LeftClimberSolenoid1.set(Value.kReverse);
+        RightClimberSolenoid1.set(Value.kReverse);
+      }
+      if (copilot_joystick.getRawButton(2)) {
+        LeftClimberSolenoid1.set(Value.kForward);
+        RightClimberSolenoid1.set(Value.kForward);
+      }
+      if (copilot_joystick.getRawButton(3)) {
+        LeftClimberSolenoid2.set(Value.kReverse);
+        RightClimberSolenoid2.set(Value.kReverse);
+      }
+      if (copilot_joystick.getRawButton(1)) {
+        LeftClimberSolenoid2.set(Value.kForward);
+        RightClimberSolenoid2.set(Value.kForward);
+      }
+    }
+  }
+
+  /**
+     * This method updates the relative position sense of the climber 1 motor to match the true position at the
+     * climber arm shaft
+     *
+     */
+  void updateClimberMotorPosition() {
+    // climberEncoder.get() returns the true climber arm shaft angle. * by 360 converts it to degrees. Subtracting
+    // 117.36 is based on measurements that offset the angle so that it reads 0 when the climber is horizontal
+    // and in the starting configuration. Finally, we * 2044.4 (need to verify) to convert degrees at the climber motor
+    // shaft into counts.  This will adjust the position of the climber motor shaft so that it matches what the actual
+    // position of the climber arm shaft and effectively corrects for any slip or incorrect positioning before the
+    // robot is turned on (recall that the arm is supposed to start in a horizontal position.
+
+    // Here is an example. If the robot were mistakenly started with the arms vertical, the climberEncoder.get() would
+    // return a 0.576 (based on test measurements). This would get converted to ~184000 and overwrite the climber motor 1
+    // position from 0 to 184000, thereby re-aligning the two. If slip between the two were to occur during the match,
+    // calling this function periodically would also correct for those misalignments as well.
+    climber_motor1.setSelectedSensorPosition(2044.4*(climberEncoder.get()*360 - 117.36));
+  }
 }
