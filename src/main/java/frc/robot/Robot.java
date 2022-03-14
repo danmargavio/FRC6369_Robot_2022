@@ -254,7 +254,7 @@ public class Robot extends TimedRobot {
 
         }
         else{
-          tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5));
+          tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5)); //nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
         }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
@@ -607,5 +607,11 @@ void IntakeReverseTest() {
       cargo_status = Robot_Cargo_State.Idle;
     } 
   }
+}
+
+
+
+void nonlinearDrive(double x, double y) { //x = driver_joystick.getRawAxis(1) && y = driver_joystick.getRawAxis(5)
+  tarzan_robot.tankDrive(-0.5*Math.signum(x)*Math.pow(x,2), -0.5*Math.signum(y)*Math.pow(y,2));
 }
 }
