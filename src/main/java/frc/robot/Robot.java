@@ -93,8 +93,8 @@ public class Robot extends TimedRobot {
   private final double goalRadius = 26.7716535; //inches 
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
   private final double desiredDistanceFromGoal = 168; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
-  private final double minimum_climber_limit = -5000; // this is the absolute minimum safe climber arm rotation limit
-  private final double maximum_climber_limit = 1000000; // this is the absolute maximum safe climber arm rotation limit
+  private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
+  private final double maximum_climber_limit = 25000; // this is the absolute maximum safe climber arm rotation limit
   private double pressureValue = 0;
   private double climberArmAngle = 0;
   
@@ -637,7 +637,7 @@ public class Robot extends TimedRobot {
       // the following allows the copilot to move the climber arms together either forward or background by holding either
       // of the shoulder trigger buttons. The harder you press, the further it changes. Every 20 msec, at full press, the
       // climber would change ~200 counts or ~10000 counts (5 degrees) per second.
-      climberArmCommand = climberArmCommand + 200*copilot_joystick.getRawAxis(3) - 200*copilot_joystick.getRawAxis(2);
+      climberArmCommand = climberArmCommand + 450*copilot_joystick.getRawAxis(3) - 450*copilot_joystick.getRawAxis(2);
 
       //      CLIMBER ARM COMMAND CLAMPING LOGIC
       // the following block of code ensures that the climber arms can never be driven beyond safe operating ranges
@@ -657,7 +657,7 @@ public class Robot extends TimedRobot {
       // B (button 2) = Left 1 and Right 1 Retract
       // X (button 3) = Left 2 and Right 2 Extend
       // A (button 1) = Left 2 and Right 2 Retract
-      if (copilot_joystick.getRawButton(4)) {
+        if (copilot_joystick.getRawButton(4)) {
         LeftClimberSolenoid1.set(Value.kReverse);
         RightClimberSolenoid1.set(Value.kReverse);
       }
@@ -693,6 +693,6 @@ public class Robot extends TimedRobot {
     // return a 0.576 (based on test measurements). This would get converted to ~184000 and overwrite the climber motor 1
     // position from 0 to 184000, thereby re-aligning the two. If slip between the two were to occur during the match,
     // calling this function periodically would also correct for those misalignments as well.
-    climber_motor1.setSelectedSensorPosition(2044.4*(climberEncoder.get()*360 - 117.36));
+    climber_motor1.setSelectedSensorPosition(1777.78*(climberEncoder.get()*360 - 117.36));
   }
 }
