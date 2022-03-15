@@ -291,7 +291,6 @@ public class Robot extends TimedRobot {
 	if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
 	finalizeMiddleRungClimb();
 	}
-    }
   }
 
   @Override
