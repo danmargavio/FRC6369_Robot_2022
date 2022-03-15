@@ -188,6 +188,7 @@ public class Robot extends TimedRobot {
 
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal)) {
       tarzan_robot.tankDrive(0.4, 0.4);
+      intake_motor1.set(0.8);
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) > desiredDistanceFromGoal)) {
       /*if (Math.abs(tx_angle) > 0.5){
@@ -205,8 +206,9 @@ public class Robot extends TimedRobot {
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
       conveyer1.set(0.8); //running conveyer 
-      if (state4_Timer.get() > 2.0){
+      if (state4_Timer.get() > 5.0){
         conveyer1.set(0);
+        intake_motor1.set(0);
         shooter_motor1.set(0);
         state4_Timer.stop();
         cargo_status = Robot_Cargo_State.Idle;
@@ -225,7 +227,6 @@ public class Robot extends TimedRobot {
     *           COPILOT JOYSTICK
     * Back (button 7) AND X (button 3) = Prepare for Middle Rung Climb
     * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
-
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side
@@ -458,7 +459,13 @@ public class Robot extends TimedRobot {
    * @return The predicted distance from the target from the shooter exit location, in inches.
    */
   double camAngletoDistance(double a2) {
-    return ((goalHeight - pupilCameraHeight)/(Math.tan(Math.toRadians(cameraPitch + a2))) + pupilDistanceToShooter + goalRadius);
+    if (a2 < 1){
+      return 0;
+    }
+    else {
+      return ((goalHeight - pupilCameraHeight)/(Math.tan(Math.toRadians(cameraPitch + a2))) + pupilDistanceToShooter + goalRadius);
+    }
+    
   }
 
   /**
