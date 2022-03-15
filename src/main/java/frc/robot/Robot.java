@@ -241,56 +241,56 @@ public class Robot extends TimedRobot {
     limelightCheck(); 
     manualIntake();
     if (copilot_joystick.getPOV() != 270){
+    	climberTest2();
+    }
+	if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
+	moveIntakeDowntoUp();
+	}
+	if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
+	moveIntakeUptoDown();
+	}
 
-    climberTest2();
-      if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
-        moveIntakeDowntoUp();
-      }
-      if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
-        moveIntakeUptoDown();
-      }
+	//If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
+	if (driver_joystick.getRawButton(2)){
+	autoAim();
 
-      //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
-      if (driver_joystick.getRawButton(2)){
-        autoAim();
+	}
+	else{
+	nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
+	}
+	//Intake (positive inputs intake a cargo)
+	if (intake_status == Intake_Deployment_State.down){
+	autoIntake(); // currently replaces manualIntake();
+	//autoReverse();
 
-      }
-      else{
-        nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
-      }
-      //Intake (positive inputs intake a cargo)
-      if (intake_status == Intake_Deployment_State.down){
-        autoIntake(); // currently replaces manualIntake();
-        //autoReverse();
-        
-        
-        //IntakeTest1();
-        //IntakeReverseTest();
-      }
 
-      // Read color sensor
-      /*Color detectedColor = color_sensor.getColor();
-      String colorString;
-      ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
-      if (match.color == kBlueTarget) {
-        colorString = "Blue";
-      } else if (match.color == kRedTarget) {
-        colorString = "Red";
-      }
-      else {
-        colorString = "Unknown";
-      }
-      SmartDashboard.putString("color sensor output", colorString); */
-      
+	//IntakeTest1();
+	//IntakeReverseTest();
+	}
 
-      autoShoot(); //shoot
+	// Read color sensor
+	/*Color detectedColor = color_sensor.getColor();
+	String colorString;
+	ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
+	if (match.color == kBlueTarget) {
+	colorString = "Blue";
+	} else if (match.color == kRedTarget) {
+	colorString = "Red";
+	}
+	else {
+	colorString = "Unknown";
+	}
+	SmartDashboard.putString("color sensor output", colorString); */
 
-      if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
-        initiateMiddleRungClimb();
-      }
-      if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
-        finalizeMiddleRungClimb();
-      }
+
+	autoShoot(); //shoot
+
+	if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
+	initiateMiddleRungClimb();
+	}
+	if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
+	finalizeMiddleRungClimb();
+	}
     }
   }
 
@@ -308,7 +308,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void testPeriodic() {
-    tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
+    tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5));
     //compressorTest();  // no longer needed as functions are controlled by climberTest2()
     //climberTest();     // no longer needed as functions are controlled by climberTest2()
 
@@ -431,9 +431,9 @@ public class Robot extends TimedRobot {
   }  */
 
       /** 
-   * This subroutine performs the robot operations manually
+   * This subroutine performs the robot operations manually (MUST HOLD LEFT POV TO USE THESE)
    * 
-   *         DRIVER JOYSTICK
+   *         COPILOT JOYSTICK
    * Right Trigger (raw axis 3) = Rotate shooter at 90% output.
    * Left Trigger (raw axis 2) = Intake Motor Forward.
    * Left Bumper (button 5) = Intake Motor Reverse.
@@ -443,6 +443,7 @@ public class Robot extends TimedRobot {
    */
   public void manualIntake() {
     if (copilot_joystick.getPOV() == 270){
+	cargo_status = Robot_Cargo_State.Idle;    // You forgot to include this; this is how you reset the robot in an emergency
       if(copilot_joystick.getRawButton(1) == true){
         intake_motor1.set(-1);
       }
@@ -596,12 +597,6 @@ public class Robot extends TimedRobot {
       LeftClimberSolenoid1.set(Value.kReverse); //right1 solenoid extend
       RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
     }
-    //else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 90)){
-    //  RightClimberSolenoid1.set(Value.kForward); //left1 solenoid retract
-  // }
-    //else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 90)){
-    //  RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
-    //}
     else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
       LeftClimberSolenoid2.set(Value.kForward); //right2 solenoid retract
       RightClimberSolenoid2.set(Value.kForward); //left2 solenoid retract
@@ -610,12 +605,6 @@ public class Robot extends TimedRobot {
       LeftClimberSolenoid2.set(Value.kReverse); //right2 solenoid extend
       RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
     }
-    //else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 270)){
-      
-  // }
-    //else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 270)){
-    //  RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
-    //}
     else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(4)){
       IntakeSolenoid.set(Value.kForward);
     }  
