@@ -236,10 +236,10 @@ public class Robot extends TimedRobot {
     * X (button 3) = Perform Autoshoot function while holding (completes after 1.5 seconds)
     
     **/
-        if (driver_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
+        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
           moveIntakeDowntoUp();
         }
-        if (driver_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
+        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
           moveIntakeUptoDown();
         }
 
@@ -300,7 +300,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void testPeriodic() {
-    tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
+    tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5));
     //compressorTest();  // no longer needed as functions are controlled by climberTest2()
     //climberTest();     // no longer needed as functions are controlled by climberTest2()
 
@@ -618,7 +618,7 @@ public class Robot extends TimedRobot {
   }
 
   void nonlinearDrive(double x, double y) { //x = driver_joystick.getRawAxis(1) && y = driver_joystick.getRawAxis(5)
-    tarzan_robot.tankDrive(-1*Math.signum(x)*Math.pow(x,2), -1*Math.signum(y)*Math.pow(y,2));
+    tarzan_robot.tankDrive(-0.5*Math.signum(x)*Math.pow(x,2), -0.5*Math.signum(y)*Math.pow(y,2));
   }
 
   /**
