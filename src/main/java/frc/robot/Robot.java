@@ -11,12 +11,7 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.DigitalInput;
-//import edu.wpi.first.wpilibj.I2C;
-//import com.revrobotics.ColorSensorV3;
-//import com.revrobotics.ColorMatchResult;
-//import com.revrobotics.ColorMatch;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
-//import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.networktables.*;
@@ -25,19 +20,7 @@ import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.ADIS16448_IMU;
 
-/**
- * The VM is configured to automatically run this class, and to call the functions corresponding to
- * each mode, as described in the TimedRobot documentation. If you change the name of this class or
- * the package after creating this project, you must also update the build.gradle file in the
- * project.
- */
 public class Robot extends TimedRobot {
-  /**
-   * This function is run when the robot is first started up and should be used for any
-   * initialization code.
-   */
-
-  //private final Subsystems my_subsystem = new Subsystems();
   private final WPI_TalonFX shooter_motor1 = new WPI_TalonFX(7);
   private final WPI_TalonFX shooter_motor2 = new WPI_TalonFX(8);
   private final WPI_TalonFX driver_leftmotor1 = new WPI_TalonFX(2);
@@ -48,15 +31,11 @@ public class Robot extends TimedRobot {
   private final WPI_TalonFX climber_motor2 = new WPI_TalonFX(15);
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
-
   private final DigitalInput climberEncoderData = new DigitalInput(1);
   private final DutyCycleEncoder climberEncoder = new DutyCycleEncoder(climberEncoderData);
-  //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
   private final Joystick copilot_joystick = new Joystick(1);
   DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
-
-  /// Setup the digital inputs
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
 
   // Setup the pneumatics devices, 
@@ -70,13 +49,6 @@ public class Robot extends TimedRobot {
   // Setup the ADIS16448 IMU
   public static final ADIS16448_IMU gyro = new ADIS16448_IMU();
 
-  // Setup the color sensor
-  //private final ColorSensorV3 color_sensor = new ColorSensorV3(I2C.Port.kOnboard);
-  //private final ColorMatch m_colorMatcher = new ColorMatch();
-
-  //private final Color kBlueTarget = new Color(0.143, 0.427, 0.429);
-  //private final Color kRedTarget = new Color(0.561, 0.100, 0.340);   // Dan adjusted these values based on measurements of the cargo
-
   private Robot_Cargo_State cargo_status = Robot_Cargo_State.Idle;
   private Intake_Deployment_State intake_status = Intake_Deployment_State.up;
   private Climber_State Climber_status = Climber_State.start;
@@ -89,15 +61,11 @@ public class Robot extends TimedRobot {
   private final double cameraPitch = 18.104; //degrees above horizon ||
   private final double pupilCameraHeight = 32.5; //inches above the ground ||
   private final double goalHeight = 104; //inches above the ground to the top of the goal
-  private double distanceFromGoal = 0; //inches parallel from shooter to the center of the goal
   private final double goalRadius = 26.7716535; //inches 
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
   private final double desiredDistanceFromGoal = 120; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
   private final double maximum_climber_limit = 25000; // this is the absolute maximum safe climber arm rotation limit
-  private double pressureValue = 0;
-  private double climberArmAngle = 0;
-  
   
   @Override
   public void robotInit() {
@@ -126,13 +94,12 @@ public class Robot extends TimedRobot {
     driver_leftmotor2.follow(driver_leftmotor1);
     climber_motor2.follow(climber_motor1);
 
-    // Shooter Control Loop Settings
+    // Control Loop Settings
     shooter_motor1.configNeutralDeadband(0.001);
 		shooter_motor1.config_kP(0, 0.015, 30);
 		shooter_motor1.config_kI(0, 0.000, 30);
 		shooter_motor1.config_kD(0, 0, 30);
     shooter_motor1.config_kF(0, 2048/22000, 30);
-
     climber_motor1.configNeutralDeadband(0.001);
 		climber_motor1.config_kP(0, 0.015, 30);
 		climber_motor1.config_kI(0, 0.000, 30);
@@ -142,10 +109,6 @@ public class Robot extends TimedRobot {
     // configure limelight camera
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
-
-    //Setup color sensor
-    //m_colorMatcher.addColorMatch(kBlueTarget);
-    //m_colorMatcher.addColorMatch(kRedTarget);
 
     //Setup compressor controls for analog pressure transducer
     phCompressor.enableAnalog(90, 120);
@@ -161,9 +124,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotPeriodic() {
-    //SmartDashboard.putNumber("RED", color_sensor.getRed());
-    //SmartDashboard.putNumber("BLUE", color_sensor.getBlue());
-    //SmartDashboard.putNumber("GREEN", color_sensor.getGreen());
     SmartDashboard.putNumber("PSI", phCompressor.getPressure());
     SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Angle relative to robot base", climberEncoder.get());
@@ -240,57 +200,34 @@ public class Robot extends TimedRobot {
     **/
     limelightCheck(); 
     manualIntake();
+    autoIntake(); // currently replaces manualIntake();
+    autoShoot(); //shoot
+
     if (copilot_joystick.getPOV() != 270){
     	climberTest2();
     }
-	if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
-	moveIntakeDowntoUp();
-	}
-	if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
-	moveIntakeUptoDown();
-	}
-
-	//If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
-	if (driver_joystick.getRawButton(2)){
-	autoAim();
-
-	}
-	else{
-	nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
-	}
-	//Intake (positive inputs intake a cargo)
-	if (intake_status == Intake_Deployment_State.down){
-	autoIntake(); // currently replaces manualIntake();
-	//autoReverse();
-
-
-	//IntakeTest1();
-	//IntakeReverseTest();
-	}
-
-	// Read color sensor
-	/*Color detectedColor = color_sensor.getColor();
-	String colorString;
-	ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
-	if (match.color == kBlueTarget) {
-	colorString = "Blue";
-	} else if (match.color == kRedTarget) {
-	colorString = "Red";
-	}
-	else {
-	colorString = "Unknown";
-	}
-	SmartDashboard.putString("color sensor output", colorString); */
-
-
-	autoShoot(); //shoot
-
-	if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
-	initiateMiddleRungClimb();
-	}
-	if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
-	finalizeMiddleRungClimb();
-	}
+    if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
+    moveIntakeDowntoUp();
+    }
+    if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
+    moveIntakeUptoDown();
+    }
+    //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
+    if (driver_joystick.getRawButton(2)){
+      autoAim();
+    }
+    else{
+      nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
+    }
+    //Intake (positive inputs intake a cargo)
+    if (intake_status == Intake_Deployment_State.down){
+      if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
+        initiateMiddleRungClimb();
+      }
+      if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(1)){
+        finalizeMiddleRungClimb();
+      }
+    }
   }
 
   @Override
@@ -308,11 +245,6 @@ public class Robot extends TimedRobot {
   @Override
   public void testPeriodic() {
     tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5));
-    //compressorTest();  // no longer needed as functions are controlled by climberTest2()
-    //climberTest();     // no longer needed as functions are controlled by climberTest2()
-
-    // Temporarily added this to allow for copilot controls to manipulate intake solenoids
-
     //         COPILOT JOYSTICK
     // Back Button (raw button 7) = Move Intake from Down to Up.
     if (copilot_joystick.getRawButton(7)){
@@ -325,7 +257,6 @@ public class Robot extends TimedRobot {
     }
     climberTest2();
     updateClimberMotorPosition(); // Test it first without this, then add it in
-    //manualIntake();      // temporarily deactivate because it interfers with climberTest2() controls
   }
 
     /**
@@ -417,19 +348,7 @@ public class Robot extends TimedRobot {
     }
   }
 
-  /*public void autoReverse(){
-    if (((driver_joystick.getRawButton(7)) && (driver_joystick.getRawButton(8)) && ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) || cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter))){
-      intake_motor1.set(-0.8);
-      conveyer1.set(-0.8);
-    }
-    /*else if ((driver_joystick.getRawButton(7) == false) && (driver_joystick.getRawButton(8) == false)){
-      intake_motor1.set(0.0);
-      conveyer1.set(0.0); 
-    }
-  
-  }  */
-
-      /** 
+   /** 
    * This subroutine performs the robot operations manually (MUST HOLD LEFT POV TO USE THESE)
    * 
    *         COPILOT JOYSTICK
@@ -442,7 +361,7 @@ public class Robot extends TimedRobot {
    */
   public void manualIntake() {
     if (copilot_joystick.getPOV() == 270){
-	cargo_status = Robot_Cargo_State.Idle;    // You forgot to include this; this is how you reset the robot in an emergency
+	    cargo_status = Robot_Cargo_State.Idle;    // You forgot to include this; this is how you reset the robot in an emergency
       if(copilot_joystick.getRawButton(1) == true){
         intake_motor1.set(-1);
       }
@@ -466,7 +385,6 @@ public class Robot extends TimedRobot {
       shooter_motor1.set(copilot_joystick.getRawAxis(3)*0.9);
     }
   }
-
 
   // This is is a custom type used to track the state of Cargo intake and shooting
   enum Robot_Cargo_State {
@@ -513,7 +431,6 @@ public class Robot extends TimedRobot {
     else {
       return ((goalHeight - pupilCameraHeight)/(Math.tan(Math.toRadians(cameraPitch + a2))) + pupilDistanceToShooter + goalRadius);
     }
-    
   }
 
   /**
@@ -530,7 +447,7 @@ public class Robot extends TimedRobot {
     }
   }
 
-      /**
+   /**
    * This subroutine begins the process of climbing the middle rung
    *
    */
@@ -545,7 +462,7 @@ public class Robot extends TimedRobot {
     }
   }
 
-      /**
+   /**
    * This subroutine completes the process of climbing the middle rung
    *
    */
@@ -557,7 +474,7 @@ public class Robot extends TimedRobot {
     }
   }
 
-      /**
+   /**
    * This subroutine moves the intake from the Down to the Up position
    *
    */
@@ -622,13 +539,8 @@ public class Robot extends TimedRobot {
       state2_Timer.start();
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-      //if (driver_joystick.getRawButton(6)){
-      //  state2_Timer.start();
-      //}
       intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
-      //shooter_motor1.set(1*0.8); //starting shooter at 80%
-      //shooter_motor1.set(ControlMode.Velocity, 18000);
       if (state2_Timer.get() > 4.0) {
         intake_motor1.set(0);
         conveyer1.set(0);
@@ -661,7 +573,7 @@ public class Robot extends TimedRobot {
   }
 
   void nonlinearDrive(double x, double y) { //x = driver_joystick.getRawAxis(1) && y = driver_joystick.getRawAxis(5)
-    tarzan_robot.tankDrive(-0.5*Math.signum(x)*Math.pow(x,2), -0.5*Math.signum(y)*Math.pow(y,2));
+    tarzan_robot.tankDrive(-0.75*Math.signum(x)*Math.pow(x,2), -0.75*Math.signum(y)*Math.pow(y,2));
   }
 
   /**
