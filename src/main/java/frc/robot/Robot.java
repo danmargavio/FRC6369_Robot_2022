@@ -92,7 +92,7 @@ public class Robot extends TimedRobot {
   private double distanceFromGoal = 0; //inches parallel from shooter to the center of the goal
   private final double goalRadius = 26.7716535; //inches 
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
-  private final double desiredDistanceFromGoal = 168; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
+  private final double desiredDistanceFromGoal = 120; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
   private final double maximum_climber_limit = 25000; // this is the absolute maximum safe climber arm rotation limit
   private double pressureValue = 0;
@@ -177,7 +177,6 @@ public class Robot extends TimedRobot {
     
   @Override
   public void autonomousInit() {
-    state4_Timer.start();
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
     cargo_status = Robot_Cargo_State.Cargo_being_intaked;
   }
@@ -188,12 +187,14 @@ public class Robot extends TimedRobot {
 
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal)) {
       tarzan_robot.tankDrive(0.4, 0.4);
+      intake_motor1.set(0.8);
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) > desiredDistanceFromGoal)) {
       /*if (Math.abs(tx_angle) > 0.5){
         tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
       }*/
       //autoAim();
+      state4_Timer.start();
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
@@ -205,8 +206,9 @@ public class Robot extends TimedRobot {
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
       conveyer1.set(0.8); //running conveyer 
-      if (state4_Timer.get() > 2.0){
+      if (state4_Timer.get() > 5.0){
         conveyer1.set(0);
+        intake_motor1.set(0);
         shooter_motor1.set(0);
         state4_Timer.stop();
         cargo_status = Robot_Cargo_State.Idle;
@@ -225,7 +227,6 @@ public class Robot extends TimedRobot {
     *           COPILOT JOYSTICK
     * Back (button 7) AND X (button 3) = Prepare for Middle Rung Climb
     * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
-
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side
@@ -300,7 +301,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void testPeriodic() {
-    tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5));
+    tarzan_robot.tankDrive(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
     //compressorTest();  // no longer needed as functions are controlled by climberTest2()
     //climberTest();     // no longer needed as functions are controlled by climberTest2()
 
@@ -458,7 +459,13 @@ public class Robot extends TimedRobot {
    * @return The predicted distance from the target from the shooter exit location, in inches.
    */
   double camAngletoDistance(double a2) {
-    return ((goalHeight - pupilCameraHeight)/(Math.tan(Math.toRadians(cameraPitch + a2))) + pupilDistanceToShooter + goalRadius);
+    if (a2 < 1){
+      return 0;
+    }
+    else {
+      return ((goalHeight - pupilCameraHeight)/(Math.tan(Math.toRadians(cameraPitch + a2))) + pupilDistanceToShooter + goalRadius);
+    }
+    
   }
 
   /**
