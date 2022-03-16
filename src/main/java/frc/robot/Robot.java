@@ -88,12 +88,6 @@ public class Robot extends TimedRobot {
     conveyer1.setInverted(true);
     intake_motor1.setInverted(true);
 
-    //Shooter, Driver, Climber Follow
-    shooter_motor2.follow(shooter_motor1);
-    driver_rightmotor2.follow(driver_rightmotor1);
-    driver_leftmotor2.follow(driver_leftmotor1);
-    climber_motor2.follow(climber_motor1);
-
     // Control Loop Settings
     shooter_motor1.configNeutralDeadband(0.001);
 		shooter_motor1.config_kP(0, 0.015, 30);
@@ -105,6 +99,12 @@ public class Robot extends TimedRobot {
 		climber_motor1.config_kI(0, 0.000, 30);
 		climber_motor1.config_kD(0, 0, 30);
     climber_motor1.set(ControlMode.Position, 0.0);
+
+    //Shooter, Driver, Climber Follow
+    shooter_motor2.follow(shooter_motor1);
+    driver_rightmotor2.follow(driver_rightmotor1);
+    driver_leftmotor2.follow(driver_leftmotor1);
+    climber_motor2.follow(climber_motor1);
 
     // configure limelight camera
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
