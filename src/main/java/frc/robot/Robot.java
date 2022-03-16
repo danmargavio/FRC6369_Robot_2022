@@ -124,13 +124,16 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotPeriodic() {
-    SmartDashboard.putNumber("PSI", phCompressor.getPressure());
-    SmartDashboard.putBoolean("Ball In", conveyor_loc_1.get());
+    SmartDashboard.putNumber("High Side Pressure", phCompressor.getPressure());
+    SmartDashboard.putBoolean("Cargo Detected on Conveyor", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Angle relative to robot base", climberEncoder.get());
     SmartDashboard.putNumber("Climber Arm Angle relative to ground", climberEncoder.get()*360 - 117.36);    // Convert encoder to degrees than subtract offet so it reads 0.0 deg when horizontal
-    SmartDashboard.putNumber("distance", camAngletoDistance(ty_angle));
+    SmartDashboard.putNumber("Distance to Goal", camAngletoDistance(ty_angle));
     SmartDashboard.putNumber("Climber 1 Encoder (counts)", climber_motor1.getSelectedSensorPosition());
     SmartDashboard.putNumber("Robot Base Pitch", gyro.getGyroAngleY()); // this is robot pitch (front to back)
+    SmartDashboard.putBoolean("Robot Idle State", (cargo_status == Robot_Cargo_State.Idle));
+    SmartDashboard.putBoolean("Single Cargo Loaded", (cargo_status == Robot_Cargo_State.Cargo_loaded));
+    SmartDashboard.putBoolean("Double Cargo Loaded", (cargo_status == Robot_Cargo_State.Cargo_double_loaded));
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
   }
@@ -290,12 +293,12 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0); //stopping intake
       conveyer1.set(0); //stopping conveyer
     }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_loaded) && (conveyor_loc_1.get() == false)) {
+    else if ((cargo_status == Robot_Cargo_State.Cargo_loaded) && (conveyor_loc_1.get() == false)) { // DAN - may be a problem where if conveyor_loc_1 goes positive before timer check, it will endlessing run intake; remove conveyor check
       if (driver_joystick.getRawButton(5) == true){
+        intake_motor1.set(0.8); //running intake ; DAN - no, this has to be performed ONLY when button is pressed, not always. moved to above
         state2_Timer.reset();
-        state2_Timer.start();
+        state2_Timer.start(); // DAN - Note that this will execute multiple times when button pressed; may be problem
       }
-      intake_motor1.set(0.8); //running intake
       if (state2_Timer.get() > 2.0) {
         intake_motor1.set(0);
         state2_Timer.stop();
@@ -324,7 +327,7 @@ public class Robot extends TimedRobot {
     else if (((cargo_status == Robot_Cargo_State.Cargo_single_shot) || (cargo_status == Robot_Cargo_State.Cargo_double_shot)) && (driver_joystick.getRawButton(3) == false)) {
       shooter_motor1.set(0.0);
     }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_single_shot)) {
+    else if ((cargo_status == Robot_Cargo_State.Cargo_single_shot)) { // DAN - double check if we need to check for button press here too
       conveyer1.set(0.8); //running conveyer 
       if (state4_Timer.get() > 1.5){
         conveyer1.set(0);
@@ -334,10 +337,10 @@ public class Robot extends TimedRobot {
         cargo_status = Robot_Cargo_State.Idle;
       }
     }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_double_shot)) {
+    else if ((cargo_status == Robot_Cargo_State.Cargo_double_shot)) { // DAN - double check if we need to check for button press here too
       conveyer1.set(0.8); //running conveyer 
       intake_motor1.set(0.8);
-      if (state4_Timer.get() > 4){
+      if (state4_Timer.get() > 4.0){
         conveyer1.set(0);
         shooter_motor1.set(0);
         intake_motor1.set(0);
