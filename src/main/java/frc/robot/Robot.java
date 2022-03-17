@@ -229,16 +229,17 @@ public class Robot extends TimedRobot {
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side
-    * Back (button 7) AND A (button 1) = Move Intake Down or Up, depending on if is already down or not
+    * Back (button 7) = Move Intake Up
+    * Start (button 8) = Move Intake Down
     * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)
     * B (button 2) = Run AutoAim function while holding
     * X (button 3) = Perform Autoshoot function while holding (completes after 1.5 seconds)
     
     **/
-        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1) && (intake_status == Intake_Deployment_State.down)){
+        if (driver_joystick.getRawButton(7)){
           moveIntakeDowntoUp();
         }
-        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1) && (intake_status == Intake_Deployment_State.up)){
+        if (driver_joystick.getRawButton(8)){
           moveIntakeUptoDown();
         }
 
