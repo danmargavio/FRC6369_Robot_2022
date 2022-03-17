@@ -18,7 +18,6 @@ import edu.wpi.first.networktables.*;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
-import edu.wpi.first.wpilibj.ADIS16448_IMU;
 
 public class Robot extends TimedRobot {
   /**
@@ -55,7 +54,6 @@ public class Robot extends TimedRobot {
   DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
   DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
 
-  public static final ADIS16448_IMU gyro = new ADIS16448_IMU();
   private Robot_Cargo_State cargo_status = Robot_Cargo_State.Idle;
   private Intake_Deployment_State intake_status = Intake_Deployment_State.up;
   private Climber_State Climber_status = Climber_State.start;
@@ -160,14 +158,10 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("High Side Pressure", phCompressor.getPressure());
     SmartDashboard.putBoolean("Cargo Detected on Conveyor", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Angle relative to robot base", climberEncoder.get());
-    //SmartDashboard.putNumber("Climber Arm Angle relative to ground", climberEncoder.get()*360 - 117.36);    // Convert encoder to degrees than subtract offet so it reads 0.0 deg when horizontal
-    SmartDashboard.putNumber("Distance to Goal", camAngletoDistance(ty_angle));
+   SmartDashboard.putNumber("Distance to Goal", camAngletoDistance(ty_angle));
     SmartDashboard.putNumber("Climber 1 Encoder (counts)", climber_motor1.getSelectedSensorPosition());
-    //SmartDashboard.putNumber("Robot Base Pitch", gyro.getGyroAngleY()); // this is robot pitch (front to back)
     SmartDashboard.putBoolean("Robot Idle State", (cargo_status == Robot_Cargo_State.Idle));
     SmartDashboard.putBoolean("Single Cargo Loaded", (cargo_status == Robot_Cargo_State.Cargo_loaded));
-    SmartDashboard.putBoolean("Double Cargo Loaded", (cargo_status == Robot_Cargo_State.Cargo_double_loaded));
-    //SmartDashboard.putNumber("State 4 Timer", state4_Timer.get());
 
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
