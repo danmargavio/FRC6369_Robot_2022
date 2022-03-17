@@ -70,7 +70,7 @@ public class Robot extends TimedRobot {
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
   private final double desiredDistanceFromGoal = 120; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
-  private final double maximum_climber_limit = 25000; // this is the absolute maximum safe climber arm rotation limit
+  private final double maximum_climber_limit = 28500; // this is the absolute maximum safe climber arm rotation limit
   
   @Override
   public void robotInit() {
