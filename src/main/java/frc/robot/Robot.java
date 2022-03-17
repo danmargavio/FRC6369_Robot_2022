@@ -140,12 +140,12 @@ public class Robot extends TimedRobot {
     climber_motor1.set(ControlMode.Position, 0.0);
 
     // configure limelight camera
-    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(0);
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
 
     //Setup compressor controls for analog pressure transducer
     phCompressor.enableAnalog(90, 120);
-    phCompressor.disable();
+    phCompressor.enabled();
 
     //Initializes Solenoids on position 'A'
     IntakeSolenoid.set(Value.kForward);
@@ -160,14 +160,14 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("High Side Pressure", phCompressor.getPressure());
     SmartDashboard.putBoolean("Cargo Detected on Conveyor", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Angle relative to robot base", climberEncoder.get());
-    SmartDashboard.putNumber("Climber Arm Angle relative to ground", climberEncoder.get()*360 - 117.36);    // Convert encoder to degrees than subtract offet so it reads 0.0 deg when horizontal
+    //SmartDashboard.putNumber("Climber Arm Angle relative to ground", climberEncoder.get()*360 - 117.36);    // Convert encoder to degrees than subtract offet so it reads 0.0 deg when horizontal
     SmartDashboard.putNumber("Distance to Goal", camAngletoDistance(ty_angle));
     SmartDashboard.putNumber("Climber 1 Encoder (counts)", climber_motor1.getSelectedSensorPosition());
-    SmartDashboard.putNumber("Robot Base Pitch", gyro.getGyroAngleY()); // this is robot pitch (front to back)
+    //SmartDashboard.putNumber("Robot Base Pitch", gyro.getGyroAngleY()); // this is robot pitch (front to back)
     SmartDashboard.putBoolean("Robot Idle State", (cargo_status == Robot_Cargo_State.Idle));
     SmartDashboard.putBoolean("Single Cargo Loaded", (cargo_status == Robot_Cargo_State.Cargo_loaded));
     SmartDashboard.putBoolean("Double Cargo Loaded", (cargo_status == Robot_Cargo_State.Cargo_double_loaded));
-    SmartDashboard.putNumber("State 4 Timer", state4_Timer.get());
+    //SmartDashboard.putNumber("State 4 Timer", state4_Timer.get());
 
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -176,7 +176,7 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousInit() {
     state4_Timer.start();
-    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(4);
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(0);
     cargo_status = Robot_Cargo_State.Cargo_being_intaked;
   }
 
@@ -187,11 +187,15 @@ public class Robot extends TimedRobot {
       newDrive(10000, 10000);
       intake_motor1.set(0.8);
     }
+    // Dan added the below, in case we have limelight problems, this will prevent us from crashing into wall and turn off the motors
+    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (state4_Timer.get() > 5.0)) {
+      state4_Timer.stop();
+      newDrive(0, 0);
+      intake_motor1.set(0.0);
+      cargo_status = Robot_Cargo_State.Idle;
+    }
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) > desiredDistanceFromGoal)) {
-      /*if (Math.abs(tx_angle) > 0.5){
-        tarzan_robot.tankDrive(-1*tx_angle, 1*tx_angle);
-      }*/
-      //autoAim();
+      state4_Timer.reset();
       state4_Timer.start();
       newDrive(0, 0);
       cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
@@ -199,12 +203,14 @@ public class Robot extends TimedRobot {
     else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
       shooter_motor1.set(0.9);
       if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) {
+        state4_Timer.reset();
         state4_Timer.start();
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
       }
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
       conveyer1.set(0.8); //running conveyer 
+      intake_motor1.set(0.8);
       if (state4_Timer.get() > 5.0){
         conveyer1.set(0);
         intake_motor1.set(0);
