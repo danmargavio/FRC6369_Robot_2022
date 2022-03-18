@@ -229,17 +229,17 @@ public class Robot extends TimedRobot {
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side
-    * Back (button 7) AND X (button 3) = Move Intake Up
-    * Back (button 7) AND A (button 1) = Move Intake Down
+    * Back (button 7) = Move Intake Up
+    * Start (button 8) = Move Intake Down
     * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)
     * B (button 2) = Run AutoAim function while holding
     * X (button 3) = Perform Autoshoot function while holding (completes after 1.5 seconds)
     
     **/
-        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(3)){
+        if (driver_joystick.getRawButton(7)){
           moveIntakeDowntoUp();
         }
-        if (driver_joystick.getRawButton(7) && driver_joystick.getRawButton(1)){
+        if (driver_joystick.getRawButton(8)){
           moveIntakeUptoDown();
         }
 
@@ -270,7 +270,8 @@ public class Robot extends TimedRobot {
           part1ClimbTraversal();
           part2ClimbTraversal();
           part3ClimbTraversal();
-          part4ClimbTraversal();        
+          part4ClimbTraversal();
+          part5ClimbTraversal();        
         }
   }
 
@@ -426,6 +427,7 @@ public class Robot extends TimedRobot {
     part2ClimbTraversal,
     part3ClimbTraversal,
     part4ClimbTraversal,
+    part5ClimbTraversal,
     end
   }
 
@@ -580,10 +582,24 @@ public class Robot extends TimedRobot {
         RightClimberSolenoid2.set(Value.kForward);
         LeftClimberSolenoid1.set(Value.kReverse);
         RightClimberSolenoid1.set(Value.kReverse);
-        Climber_status = Climber_State.end;
+        state4_Timer.reset();
+        state4_Timer.start();
+        Climber_status = Climber_State.part5ClimbTraversal;
       }
     }
   }
+
+  void part5ClimbTraversal() {
+    if (state4_Timer.get() > 2.0){
+      if ((Climber_status == Climber_State.part5ClimbTraversal) && (intake_status == Intake_Deployment_State.up)){
+        LeftClimberSolenoid1.set(Value.kForward);
+        RightClimberSolenoid1.set(Value.kForward);
+        state4_Timer.stop();
+        Climber_status = Climber_State.end;
+      }
+    }
+    }
+    
 
    /**
    * This subroutine moves the intake from the Down to the Up position
