@@ -223,17 +223,18 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     /**
-    *           COPILOT JOYSTICK
+    *          COPILOT JOYSTICK
     * Back (button 7) AND X (button 3) = Prepare for Middle Rung Climb
     * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
+    * Left Bumper (button 5) = Run AutoAim function while holding
+    * Right Bumper (button 6) = Perform Autoshoot function while holding (completes after 1.5 seconds)
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side
     * Back (button 7) = Move Intake Up
     * Start (button 8) = Move Intake Down
     * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)
-    * B (button 2) = Run AutoAim function while holding
-    * X (button 3) = Perform Autoshoot function while holding (completes after 1.5 seconds)
+    
     
     **/
         if (driver_joystick.getRawButton(7)){
@@ -244,7 +245,7 @@ public class Robot extends TimedRobot {
         }
 
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
-        if (driver_joystick.getRawButton(2)){
+        if (copilot_joystick.getRawButton(5)){
           autoAim();
 
         }
@@ -341,7 +342,7 @@ public class Robot extends TimedRobot {
   }
 
   public void autoShoot() {
-    if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (driver_joystick.getRawButton(3))) {
+    if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(6))) {
       shooter_motor1.set(0.9);
       if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) {
         state4_Timer.reset();
