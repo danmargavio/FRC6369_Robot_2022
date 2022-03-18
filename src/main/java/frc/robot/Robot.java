@@ -350,7 +350,7 @@ public class Robot extends TimedRobot {
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
       }
     }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (driver_joystick.getRawButton(3) == false)) {
+    else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(6) == false)) {
       shooter_motor1.set(0.0);
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_shot)) {
