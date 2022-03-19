@@ -229,18 +229,15 @@ public class Robot extends TimedRobot {
     *          COPILOT JOYSTICK
     * Back (button 7) AND X (button 3) = Prepare for Middle Rung Climb
     * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
-    * Left Bumper (button 5) = Run AutoAim function while holding
+    * A button (button 1) = Run AutoAim function while holding
     * Right Bumper (button 6) = Perform Autoshoot function while holding (completes after 1.5 seconds)
     * UP D-PAD (pov 0) = Move Intake Up
     * DOWN D-PAD (pov 180) = Move Intake Down
-
+    * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)  
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
-    * Right Stick Up/Down (raw axis 5) = Move Robot right side
-    * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)   
+    * Right Stick Up/Down (raw axis 5) = Move Robot right side  
     **/
-        
-
         if (copilot_joystick.getPOV()== 0){ // Up on the D-Pad
           moveIntakeDowntoUp();
         }
@@ -249,7 +246,7 @@ public class Robot extends TimedRobot {
         }
 
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
-        if (copilot_joystick.getRawButton(5)){
+        if (copilot_joystick.getRawButton(1)){
           autoAim();
 
         }
@@ -320,11 +317,16 @@ public class Robot extends TimedRobot {
   public void autoIntake() {
     if((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(5) == true)){
       cargo_status = Robot_Cargo_State.Cargo_being_intaked;
+      state2_Timer.reset();
+      state2_Timer.start();
     }
 
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
       intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
+      if (copilot_joystick.getRawButton(5) == true){
+        state2_Timer.reset();
+      }
       if (state2_Timer.get() > 4.0) {
         intake_motor1.set(0);
         conveyer1.set(0);
@@ -340,12 +342,12 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0); //stopping intake
       conveyer1.set(0); //stopping conveyer
     }
-    /*else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == true)){
+    else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == true)){
       intake_motor1.set(0.8);
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == false)){
       intake_motor1.set(0);
-    } */
+    }
   }
 
 
@@ -633,7 +635,8 @@ public class Robot extends TimedRobot {
     }
     else{
       //tarzan_robot.tankDrive(0, 0);
-      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+      //cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;  //How and why did this get here?
+      newDrive(0, 0);
     }
   }
 
