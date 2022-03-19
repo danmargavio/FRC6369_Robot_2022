@@ -68,7 +68,7 @@ public class Robot extends TimedRobot {
   private final double goalHeight = 104; //inches above the ground to the top of the goal
   private final double goalRadius = 26.7716535; //inches 
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
-  private final double desiredDistanceFromGoal = 120; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
+  private final double desiredDistanceFromGoal = 155; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
   private final double maximum_climber_limit = 28500; // this is the absolute maximum safe climber arm rotation limit
   
@@ -142,7 +142,7 @@ public class Robot extends TimedRobot {
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
 
     //Setup compressor controls for analog pressure transducer
-    phCompressor.enableAnalog(90, 120);
+    phCompressor.enableAnalog(110, 120);
     phCompressor.enabled();
 
     //Initializes Solenoids on position 'A'
@@ -158,10 +158,12 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("High Side Pressure", phCompressor.getPressure());
     SmartDashboard.putBoolean("Cargo Detected on Conveyor", conveyor_loc_1.get());
     SmartDashboard.putNumber("Climber Arm Angle relative to robot base", climberEncoder.get());
-   SmartDashboard.putNumber("Distance to Goal", camAngletoDistance(ty_angle));
+    SmartDashboard.putNumber("Distance to Goal", camAngletoDistance(ty_angle));
     SmartDashboard.putNumber("Climber 1 Encoder (counts)", climber_motor1.getSelectedSensorPosition());
     SmartDashboard.putBoolean("Robot Idle State", (cargo_status == Robot_Cargo_State.Idle));
-    SmartDashboard.putBoolean("Single Cargo Loaded", (cargo_status == Robot_Cargo_State.Cargo_loaded));
+    SmartDashboard.putBoolean("Cargo Being Intaked", (cargo_status == Robot_Cargo_State.Cargo_being_intaked));
+    SmartDashboard.putNumber("Timer 2", state2_Timer.get());
+    
 
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -176,6 +178,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
+    moveIntakeUptoDown();
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal)) {
       //tarzan_robot.tankDrive(0.4, 0.4);
       newDrive(10000, 10000);
@@ -205,7 +208,7 @@ public class Robot extends TimedRobot {
     else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
       conveyer1.set(0.8); //running conveyer 
       intake_motor1.set(0.8);
-      if (state4_Timer.get() > 5.0){
+      if (state4_Timer.get() > 10.0){
         conveyer1.set(0);
         intake_motor1.set(0);
         shooter_motor1.set(0);
@@ -228,19 +231,20 @@ public class Robot extends TimedRobot {
     * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
     * Left Bumper (button 5) = Run AutoAim function while holding
     * Right Bumper (button 6) = Perform Autoshoot function while holding (completes after 1.5 seconds)
+    * UP D-PAD (pov 0) = Move Intake Up
+    * DOWN D-PAD (pov 180) = Move Intake Down
+
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side
-    * Back (button 7) = Move Intake Up
-    * Start (button 8) = Move Intake Down
-    * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)
-    
-    
+    * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)   
     **/
-        if (driver_joystick.getRawButton(7)){
+        
+
+        if (copilot_joystick.getPOV()== 0){ // Up on the D-Pad
           moveIntakeDowntoUp();
         }
-        if (driver_joystick.getRawButton(8)){
+        if (copilot_joystick.getPOV()== 180){ //Right on the D-PAD
           moveIntakeUptoDown();
         }
 
@@ -251,14 +255,16 @@ public class Robot extends TimedRobot {
         }
         else{
           //tarzan_robot.tankDrive(-0.75*driver_joystick.getRawAxis(1), -0.75*driver_joystick.getRawAxis(5));
-          newDrive(-35000*driver_joystick.getRawAxis(1), -35000*driver_joystick.getRawAxis(5));
+          newDrive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxis(5));
           //nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
         }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
           autoIntake(); // currently replaces manualIntake();
+          //manualIntake();
         }
-        autoShoot(); //shoot
+
+        //autoShoot(); //shoot
 
         climberTest2();
 
@@ -312,16 +318,11 @@ public class Robot extends TimedRobot {
    *
    */
   public void autoIntake() {
-    if((cargo_status == Robot_Cargo_State.Idle) && (driver_joystick.getRawButton(5) == true)){
+    if((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(5) == true)){
       cargo_status = Robot_Cargo_State.Cargo_being_intaked;
-      state2_Timer.reset();
-      state2_Timer.start();
     }
 
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-      if (driver_joystick.getRawButton(5) == true){
-        state2_Timer.reset();
-      }
       intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
       if (state2_Timer.get() > 4.0) {
@@ -339,7 +340,14 @@ public class Robot extends TimedRobot {
       intake_motor1.set(0); //stopping intake
       conveyer1.set(0); //stopping conveyer
     }
+    /*else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == true)){
+      intake_motor1.set(0.8);
+    }
+    else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == false)){
+      intake_motor1.set(0);
+    } */
   }
+
 
   public void autoShoot() {
     if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(6))) {
@@ -368,7 +376,7 @@ public class Robot extends TimedRobot {
       /** 
    * This subroutine performs the robot operations manually
    * 
-   *         DRIVER JOYSTICK
+   *         copilot_joystick
    * Right Trigger (raw axis 3) = Rotate shooter at 90% output.
    * Left Trigger (raw axis 2) = Intake Motor Forward.
    * Left Bumper (button 5) = Intake Motor Reverse.
@@ -377,24 +385,24 @@ public class Robot extends TimedRobot {
    * 
    */
   public void manualIntake() {
-    if(driver_joystick.getRawButton(5) == true){
+    if(copilot_joystick.getRawButton(5) == true){
       intake_motor1.set(-1);
     }
-    else if(driver_joystick.getRawButton(5) == false){
-      intake_motor1.set(driver_joystick.getRawAxis(2));
+    else if(copilot_joystick.getRawButton(5) == false){
+      intake_motor1.set(copilot_joystick.getRawAxis(2));
     }
     //Conveyor (positive inputs bring cargo in)
-    if ((driver_joystick.getRawButton(4) == true) && (driver_joystick.getRawButton(3) == false)) {
+    if ((copilot_joystick.getRawButton(4) == true) && (copilot_joystick.getRawButton(3) == false)) {
       conveyer1.set(1);
     }
-    else if((driver_joystick.getRawButton(4) == false) && driver_joystick.getRawButton(3) == true) {
+    else if((copilot_joystick.getRawButton(4) == false) && copilot_joystick.getRawButton(3) == true) {
       conveyer1.set(-1);
     }
     else {
       conveyer1.set(0);
     }
     //Shooter (positive inputs shoot cargo out)
-    shooter_motor1.set(driver_joystick.getRawAxis(3)*0.9);
+    shooter_motor1.set(copilot_joystick.getRawAxis(3)*0.9);
   }
 
   // This is is a custom type used to track the state of Cargo intake and shooting
@@ -469,13 +477,11 @@ public class Robot extends TimedRobot {
     if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
       climberArmCommand = -186000;
       climber_motor1.set(ControlMode.Position, climberArmCommand);
-      if ((climber_motor1.getSelectedSensorPosition() >= -188000) && (climber_motor1.getSelectedSensorPosition() <= -184000)){
-        LeftClimberSolenoid2.set(Value.kReverse);
-        RightClimberSolenoid2.set(Value.kReverse);
-        state4_Timer.reset();
-        state4_Timer.start();
-        Climber_status = Climber_State.part1ClimbMiddleRung;
-      }
+      LeftClimberSolenoid2.set(Value.kReverse);
+      RightClimberSolenoid2.set(Value.kReverse);
+      state4_Timer.reset();
+      state4_Timer.start();
+      Climber_status = Climber_State.part1ClimbMiddleRung;
     }
   }
   void finalizeMiddleRungClimb() {
@@ -495,13 +501,11 @@ public class Robot extends TimedRobot {
     if (state4_Timer.get() > 2.0){
       if ((Climber_status == Climber_State.part2ClimbMiddleRung) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
-        climberArmCommand = -435000;
+        climberArmCommand = -450000;
         climber_motor1.set(ControlMode.Position, climberArmCommand);
-        if ((climber_motor1.getSelectedSensorPosition() >= -440000) && (climber_motor1.getSelectedSensorPosition() <= -425000)){
-          state4_Timer.reset();
-          state4_Timer.start();
-          Climber_status = Climber_State.part1ClimbTopRung;
-        }
+        state4_Timer.reset();
+        state4_Timer.start();
+        Climber_status = Climber_State.part1ClimbTopRung;
       }
     }
   }
@@ -551,13 +555,11 @@ public class Robot extends TimedRobot {
     if (state4_Timer.get() > 2.0){
       if ((Climber_status == Climber_State.part2ClimbTraversal) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
-        climberArmCommand = -708000;
+        climberArmCommand = -758000;
         climber_motor1.set(ControlMode.Position, climberArmCommand);
-        if ((climber_motor1.getSelectedSensorPosition() >= -710000) && (climber_motor1.getSelectedSensorPosition() <= -700000)){
-          state4_Timer.reset();
-          state4_Timer.start();
-          Climber_status = Climber_State.part3ClimbTraversal;
-        }
+        state4_Timer.reset();
+        state4_Timer.start();
+        Climber_status = Climber_State.part3ClimbTraversal;
       }
     }
   }
@@ -724,7 +726,7 @@ public class Robot extends TimedRobot {
       // the following allows the copilot to move the climber arms together either forward or background by holding either
       // of the shoulder trigger buttons. The harder you press, the further it changes. Every 20 msec, at full press, the
       // climber would change ~200 counts or ~10000 counts (5 degrees) per second.
-      climberArmCommand = climberArmCommand + 450*copilot_joystick.getRawAxis(3) - 450*copilot_joystick.getRawAxis(2);
+      climberArmCommand = climberArmCommand + 600*copilot_joystick.getRawAxis(3) - 600*copilot_joystick.getRawAxis(2);
 
       //      CLIMBER ARM COMMAND CLAMPING LOGIC
       // the following block of code ensures that the climber arms can never be driven beyond safe operating ranges
