@@ -20,10 +20,6 @@ import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 
 public class Robot extends TimedRobot {
-  /**
-   * This function is run when the robot is first started up and should be used for any
-   * initialization code.
-   */
 
   private final WPI_TalonFX shooter_motor1 = new WPI_TalonFX(7);
   private final WPI_TalonFX shooter_motor2 = new WPI_TalonFX(8);
@@ -35,18 +31,13 @@ public class Robot extends TimedRobot {
   private final WPI_TalonFX climber_motor2 = new WPI_TalonFX(15);
   private final WPI_TalonFX intake_motor1 = new WPI_TalonFX(19);
   private final WPI_TalonFX conveyer1 = new WPI_TalonFX(20);
-
   private final DigitalInput climberEncoderData = new DigitalInput(1);
   private final DutyCycleEncoder climberEncoder = new DutyCycleEncoder(climberEncoderData);
-  //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
   private final Joystick copilot_joystick = new Joystick(1);
-
-  //DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
-
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
 
-  // Setup the pneumatics devices, 
+  // Setup the pneumatics devices,
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
   DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 15); /* Make sure channel number associates with kReverse and Forward Ex: Channel 6 brings down (kReverse) and vice versa with channel 7*/
   DoubleSolenoid RightClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 11); //Kforward is Retract and KReverse is Extend
@@ -54,6 +45,7 @@ public class Robot extends TimedRobot {
   DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
   DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
 
+  // State and other variables
   private Cargo_State cargo_status = Cargo_State.Idle;
   private Intake_Deployment_State intake_status = Intake_Deployment_State.up;
   private Climber_State Climber_status = Climber_State.Start_1;
@@ -67,12 +59,13 @@ public class Robot extends TimedRobot {
   private double climberArmAdjust = 0.0;
   private double climberSetPoint = 0.0;
 
+  // Constants
   private final double cameraPitch = 18.104; //degrees above horizon ||
   private final double pupilCameraHeight = 32.5; //inches above the ground ||
   private final double goalHeight = 104; //inches above the ground to the top of the goal
   private final double goalRadius = 26.7716535; //inches 
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
-  private final double desiredDistanceFromGoal = 155; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
+  private final double desiredDistanceFromGoal = 155; //inches, distance from the shooter to the center of goal ||
   private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
   private final double maximum_climber_limit = 28500; // this is the absolute maximum safe climber arm rotation limit
   private final double climber_start_angle = 0;
