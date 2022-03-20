@@ -25,7 +25,6 @@ public class Robot extends TimedRobot {
    * initialization code.
    */
 
-  //private final Subsystems my_subsystem = new Subsystems();
   private final WPI_TalonFX shooter_motor1 = new WPI_TalonFX(7);
   private final WPI_TalonFX shooter_motor2 = new WPI_TalonFX(8);
   private final WPI_TalonFX driver_leftmotor1 = new WPI_TalonFX(2);
@@ -42,6 +41,7 @@ public class Robot extends TimedRobot {
   //Joysticks
   private final Joystick driver_joystick = new Joystick(0);
   private final Joystick copilot_joystick = new Joystick(1);
+
   //DifferentialDrive tarzan_robot = new DifferentialDrive(driver_leftmotor1, driver_rightmotor1);
 
   private final DigitalInput conveyor_loc_1 = new DigitalInput(0);
@@ -54,14 +54,18 @@ public class Robot extends TimedRobot {
   DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
   DoubleSolenoid LeftClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
 
-  private Robot_Cargo_State cargo_status = Robot_Cargo_State.Idle;
+  private Cargo_State cargo_status = Cargo_State.Idle;
   private Intake_Deployment_State intake_status = Intake_Deployment_State.up;
-  private Climber_State Climber_status = Climber_State.start;
-  private final Timer state4_Timer = new Timer();
-  private final Timer state2_Timer = new Timer();
+  private Climber_State Climber_status = Climber_State.Start_1;
+  private final Timer intake_Timer = new Timer();
+  private final Timer shooter_Timer = new Timer();
+  private final Timer climber_Timer = new Timer();
+  private final Timer auto_Timer = new Timer();
   private double tx_angle;
   private double ty_angle = -1000.0; //target degrees above the center of the camera
   private double climberArmCommand = 0.0; //variable used to actively control the position of the climber arms; units are in counts at the climber1 motor shaft
+  private double climberArmAdjust = 0.0;
+  private double climberSetPoint = 0.0;
 
   private final double cameraPitch = 18.104; //degrees above horizon ||
   private final double pupilCameraHeight = 32.5; //inches above the ground ||
@@ -71,6 +75,12 @@ public class Robot extends TimedRobot {
   private final double desiredDistanceFromGoal = 155; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
   private final double maximum_climber_limit = 28500; // this is the absolute maximum safe climber arm rotation limit
+  private final double climber_start_angle = 0;
+  private final double climber_middle_angle = -175000;
+  private final double climber_top_approach_angle = -450000;
+  private final double climber_traversal_approach_angle = -800000;
+  private final double climber_end_angle = -830000; 
+  private final double climber_timeout = 1.0; // units in seconds
   
   @Override
   public void robotInit() {
@@ -116,7 +126,7 @@ public class Robot extends TimedRobot {
 
     // Shooter Control Loop Settings
     shooter_motor1.configNeutralDeadband(0.001);
-		shooter_motor1.config_kP(0, 0.015, 30);
+		shooter_motor1.config_kP(0, 0.010, 30);
 		shooter_motor1.config_kI(0, 0.000, 30);
 		shooter_motor1.config_kD(0, 0, 30);
     shooter_motor1.config_kF(0, 2048/22000, 30);
@@ -127,7 +137,7 @@ public class Robot extends TimedRobot {
     shooter_motor2.config_kF(0, 2048/22000, 30);
 
     climber_motor1.configNeutralDeadband(0.001);
-		climber_motor1.config_kP(0, 0.015, 30);
+		climber_motor1.config_kP(0, 0.010, 30);
 		climber_motor1.config_kI(0, 0.000, 30);
 		climber_motor1.config_kD(0, 0, 30);
     climber_motor2.configNeutralDeadband(0.001);
@@ -151,6 +161,8 @@ public class Robot extends TimedRobot {
     RightClimberSolenoid2.set(Value.kForward);
     LeftClimberSolenoid1.set(Value.kForward);
     LeftClimberSolenoid2.set(Value.kForward);
+
+    climber_Timer.start();
   }
 
   @Override
@@ -160,123 +172,115 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Climber Arm Angle relative to robot base", climberEncoder.get());
     SmartDashboard.putNumber("Distance to Goal", camAngletoDistance(ty_angle));
     SmartDashboard.putNumber("Climber 1 Encoder (counts)", climber_motor1.getSelectedSensorPosition());
-    SmartDashboard.putBoolean("Robot Idle State", (cargo_status == Robot_Cargo_State.Idle));
-    SmartDashboard.putBoolean("Cargo Being Intaked", (cargo_status == Robot_Cargo_State.Cargo_being_intaked));
-    SmartDashboard.putNumber("Timer 2", state2_Timer.get());
-    
+    SmartDashboard.putString("Climber Status" , Climber_status.climber_sequence_name);
+    SmartDashboard.putNumber("Climber Status Num" , Climber_status.climber_sequence_number);
+    SmartDashboard.putString("Intake Status" , intake_status.intake_sequence_name);
+    SmartDashboard.putString("Cargo Status" , cargo_status.cargo_sequence_name);
+    SmartDashboard.putNumber("Climber Position Command", climberSetPoint);
+    SmartDashboard.putNumber("Cargo Timer", intake_Timer.get());
 
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
+    
+    updateClimberMotorPosition();
   }
     
   @Override
   public void autonomousInit() {
-    state4_Timer.start();
+    auto_Timer.start();
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(0);
-    cargo_status = Robot_Cargo_State.Cargo_being_intaked;
+    cargo_status = Cargo_State.Cargo_being_intaked;
   }
 
   @Override
   public void autonomousPeriodic() {
     moveIntakeUptoDown();
-    if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal)) {
-      //tarzan_robot.tankDrive(0.4, 0.4);
-      newDrive(10000, 10000);
+    if ((cargo_status == Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal)) {
+      drive(10000, 10000);
       intake_motor1.set(0.8);
     }
     // Dan added the below, in case we have limelight problems, this will prevent us from crashing into wall and turn off the motors
-    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (state4_Timer.get() > 5.0)) {
-      state4_Timer.stop();
-      newDrive(0, 0);
+    else if ((cargo_status == Cargo_State.Cargo_being_intaked) && (auto_Timer.get() > 10.0)) {
+      auto_Timer.stop();
+      drive(0, 0);
       intake_motor1.set(0.0);
-      cargo_status = Robot_Cargo_State.Idle;
+      cargo_status = Cargo_State.Idle;
     }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) > desiredDistanceFromGoal)) {
-      state4_Timer.reset();
-      state4_Timer.start();
-      newDrive(0, 0);
-      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
+    else if ((cargo_status == Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) > desiredDistanceFromGoal)) {
+      auto_Timer.reset();
+      auto_Timer.start();
+      drive(0, 0);
+      cargo_status = Cargo_State.Cargo_awaiting_shooter;
     }
-    else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
+    else if (cargo_status == Cargo_State.Cargo_awaiting_shooter) {
       shooter_motor1.set(0.9);
       if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) {
-        state4_Timer.reset();
-        state4_Timer.start();
-        cargo_status = Robot_Cargo_State.Cargo_being_shot;
+        auto_Timer.reset();
+        auto_Timer.start();
+        cargo_status = Cargo_State.Cargo_being_shot;
       }
     }
-    else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
+    else if (cargo_status == Cargo_State.Cargo_being_shot) {
       conveyer1.set(0.8); //running conveyer 
       intake_motor1.set(0.8);
-      if (state4_Timer.get() > 10.0){
+      if (auto_Timer.get() > 10.0){
         conveyer1.set(0);
         intake_motor1.set(0);
         shooter_motor1.set(0);
-        state4_Timer.stop();
-        cargo_status = Robot_Cargo_State.Idle;
+        auto_Timer.stop();
+        cargo_status = Cargo_State.Idle;
       }
     }
   }
 
   @Override
   public void teleopInit() {
-    cargo_status = Robot_Cargo_State.Idle;
+    cargo_status = Cargo_State.Idle;
   }
 
   @Override
   public void teleopPeriodic() {
     /**
     *          COPILOT JOYSTICK
-    * Back (button 7) AND X (button 3) = Prepare for Middle Rung Climb
-    * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
+    * Up D-PAD (pov 0) = Move Intake Up
+    * Down D-PAD (pov 180) = Move Intake Down
+    * Left D-Pad = Go to Previous Climb State
+    * Right D-Pad = Go to Next Climb State
     * A button (button 1) = Run AutoAim function while holding
     * Right Bumper (button 6) = Perform Autoshoot function while holding (completes after 1.5 seconds)
-    * UP D-PAD (pov 0) = Move Intake Up
-    * DOWN D-PAD (pov 180) = Move Intake Down
     * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)  
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side  
     **/
-        if (copilot_joystick.getPOV()== 0){ // Up on the D-Pad
-          moveIntakeDowntoUp();
-        }
-        if (copilot_joystick.getPOV()== 180){ //Right on the D-PAD
-          moveIntakeUptoDown();
-        }
 
-        //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
-        if (copilot_joystick.getRawButton(1)){
-          autoAim();
+    // HANDLE INTAKE POSITION STATE CHANGES
+    if (copilot_joystick.getPOV()== 0) { //Up on the D-Pad
+      moveIntakeDowntoUp();
+    }
+    else if (copilot_joystick.getPOV()== 180) { //Down on the D-PAD
+      moveIntakeUptoDown();
+    }
 
-        }
-        else{
-          //tarzan_robot.tankDrive(-0.75*driver_joystick.getRawAxis(1), -0.75*driver_joystick.getRawAxis(5));
-          newDrive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxis(5));
-          //nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
-        }
-        //Intake (positive inputs intake a cargo)
-        if (intake_status == Intake_Deployment_State.down){
-          autoIntake(); // currently replaces manualIntake();
-          //manualIntake();
-        }
+    // HANDLE INTAKE AND SHOOTING STATES
+    processCargoState(copilot_joystick.getRawButton(5), copilot_joystick.getRawButton(6));
 
-        //autoShoot(); //shoot
+    // HANDLE CLIMBER STATE CHANGES with programable min delay between each change
+    if ((copilot_joystick.getPOV() == 90) && (climber_Timer.get() > climber_timeout)) {
+      nextClimberState();      
+    }
+    else if ((copilot_joystick.getPOV() == 270) && (climber_Timer.get() > climber_timeout)) {
+      previousClimberState();      
+    }
+    processClimberState(copilot_joystick.getRawAxis(3), copilot_joystick.getRawAxis(2));
 
-        climberTest2();
-
-        if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
-          initiateMiddleRungClimb();
-          finalizeMiddleRungClimb();
-          part1ClimbTopRung();
-          part2ClimbTopRung();
-          part3ClimbTopRung();
-          part1ClimbTraversal();
-          part2ClimbTraversal();
-          part3ClimbTraversal();
-          part4ClimbTraversal();
-          part5ClimbTraversal();        
-        }
+    // HANDLE DRIVE TRAIN COMMANDS
+    if (copilot_joystick.getRawButton(1)){
+      autoAim();
+    }
+    else {
+      drive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxis(5));
+    }
   }
 
   @Override
@@ -287,159 +291,195 @@ public class Robot extends TimedRobot {
 
   @Override
   public void testInit() {
-    cargo_status = Robot_Cargo_State.Idle;
-    updateClimberMotorPosition(); // Test it first without this, then add it in
+    cargo_status = Cargo_State.Idle;
   }
 
   @Override
   public void testPeriodic() {
-    //tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5));
-    newDrive(-35000*driver_joystick.getRawAxis(1), -35000*driver_joystick.getRawAxis(5));
-
-    //         COPILOT JOYSTICK
-    // Back Button (raw button 7) = Move Intake from Down to Up.
-    if (copilot_joystick.getRawButton(7)){
-      moveIntakeDowntoUp();
-    }
-    //         COPILOT JOYSTICK
-    // Start Button (raw button 8) = Move Intake from Up to Down.
-    if (copilot_joystick.getRawButton(8)){
-      moveIntakeUptoDown();
-    }
-    climberTest2();
-    updateClimberMotorPosition(); // Test it first without this, then add it in
   }
 
-    /**
-   * This subroutine performs the semi-autonomous intake and shooting process
-   *
-   */
-  public void autoIntake() {
-    if((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(5) == true)){
-      cargo_status = Robot_Cargo_State.Cargo_being_intaked;
-      state2_Timer.reset();
-      state2_Timer.start();
-    }
+  enum Cargo_State {
+    Idle("Idle", 1),    // This state means that the robot has no cargo in it and all intake/conveyor/shooter motors are off
+    Cargo_being_intaked("Being Intaked", 2),     // This state means that a cargo is in the process of being intaked, but still in transit
+    Cargo_awaiting_shooter("Awaiting Shooter", 3),    // This state means that a cargo is in the robot and awaiting to be shot out
+    Cargo_being_shot("Being Shot", 4);    // This state means that the cargo is being shot out
 
-    if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-      intake_motor1.set(0.8); //running intake
-      conveyer1.set(0.8); //running conveyer
-      if (copilot_joystick.getRawButton(5) == true){
-        state2_Timer.reset();
-      }
-      if (state2_Timer.get() > 4.0) {
-        intake_motor1.set(0);
-        conveyer1.set(0);
-        shooter_motor1.set(0);
-        state2_Timer.stop();
-        cargo_status = Robot_Cargo_State.Idle;
-      }
-    }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
-      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
-      state2_Timer.stop();
-      state2_Timer.reset();
-      intake_motor1.set(0); //stopping intake
-      conveyer1.set(0); //stopping conveyer
-    }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == true)){
-      intake_motor1.set(0.8);
-    }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == false)){
-      intake_motor1.set(0);
-    }
-  }
+    public String cargo_sequence_name;
+    public int cargo_sequence_number;
 
-
-  public void autoShoot() {
-    if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(6))) {
-      shooter_motor1.set(0.9);
-      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) {
-        state4_Timer.reset();
-        state4_Timer.start();      
-        cargo_status = Robot_Cargo_State.Cargo_being_shot;
-      }
+    Cargo_State(String Name, int Number) {
+      this.cargo_sequence_name = Name;
+      this.cargo_sequence_number = Number;
     }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(6) == false)) {
-      shooter_motor1.set(0.0);
-    }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_being_shot)) {
-      conveyer1.set(0.8); //running conveyer 
-      if (state4_Timer.get() > 1.5){
-        conveyer1.set(0);
-        shooter_motor1.set(0);
-        state4_Timer.stop();
-        state4_Timer.reset();
-        cargo_status = Robot_Cargo_State.Idle;
-      }
-    }
-  }
-
-      /** 
-   * This subroutine performs the robot operations manually
-   * 
-   *         copilot_joystick
-   * Right Trigger (raw axis 3) = Rotate shooter at 90% output.
-   * Left Trigger (raw axis 2) = Intake Motor Forward.
-   * Left Bumper (button 5) = Intake Motor Reverse.
-   * Y (button 4) = Conveyor Motor Forward.
-   * X (button 3) = Conveyor Motor Reverse.
-   * 
-   */
-  public void manualIntake() {
-    if(copilot_joystick.getRawButton(5) == true){
-      intake_motor1.set(-1);
-    }
-    else if(copilot_joystick.getRawButton(5) == false){
-      intake_motor1.set(copilot_joystick.getRawAxis(2));
-    }
-    //Conveyor (positive inputs bring cargo in)
-    if ((copilot_joystick.getRawButton(4) == true) && (copilot_joystick.getRawButton(3) == false)) {
-      conveyer1.set(1);
-    }
-    else if((copilot_joystick.getRawButton(4) == false) && copilot_joystick.getRawButton(3) == true) {
-      conveyer1.set(-1);
-    }
-    else {
-      conveyer1.set(0);
-    }
-    //Shooter (positive inputs shoot cargo out)
-    shooter_motor1.set(copilot_joystick.getRawAxis(3)*0.9);
-  }
-
-  // This is is a custom type used to track the state of Cargo intake and shooting
-  enum Robot_Cargo_State {
-    Idle,    // This state means that the robot has no cargo in it and all intake/conveyor/shooter motors are off
-    Cargo_being_intaked,     // This state means that a cargo is in the process of being intaked, but still in transit
-    Cargo_awaiting_shooter,    // This state means that a cargo is in the robot and awaiting to be shot out
-    Cargo_being_shot,    // This state means that the cargo is being shot out
-    Cargo_loaded,
-    Cargo_single_shot, 
-    Cargo_double_shot,
-    Cargo_being_double_loaded,
-    Cargo_double_loaded,
-    Ejecting,                 // This state means that the cargo is being ejected
-    Error   // This is an error state or condition
   }
 
   enum Intake_Deployment_State {
-    up, 
-    down
+    up("Up", 1), 
+    down("Down", 2);
+
+    public String intake_sequence_name;
+    public int intake_sequence_number;
+
+    Intake_Deployment_State(String Name, int Number) {
+      this.intake_sequence_name = Name;
+      this.intake_sequence_number = Number;
+    }
   }
   
   enum Climber_State {
-    start, 
-    part1ClimbMiddleRung,
-    part2ClimbMiddleRung,
-    part1ClimbTopRung,
-    part2ClimbTopRung,
-    part3ClimbTopRung,
-    part1ClimbTraversal,
-    part2ClimbTraversal,
-    part3ClimbTraversal,
-    part4ClimbTraversal,
-    part5ClimbTraversal,
-    end
+    Start_1("Start", 1),
+    BeginMiddleClimb_2("Begin Middle Climb", 2),
+    ExtendMiddleClimb_3("Extend Middle Climb",3),
+    FinishMiddleClimb_4("Finish Middle Climb", 4),
+    BeginTopClimb_5("Begin Top Climb", 5),
+    ExtendTopClimbArms_6("Extend Top Climb Arms", 6),
+    RetractTopRung_7("Retract Top Rung", 7),
+    ExtendMidRung_8("Extend Mid Rung", 8),
+    RetractMidRung_9("Retract after Top Rung", 9),
+    BeginTraversalClimb_10("Begin Traversal Climb", 10),
+    ExtendTraversalClimbArms_11("Extend Traversal Climb Arms", 11),
+    RetractTraversalRung_12("Retract Traversal Rung", 12),
+    ExtendTopRung_13("Extend Top Rung", 13),
+    RetractTopRung_14("Retract after Traversal Rung",14),
+    End_15("End", 15);
+
+    public String climber_sequence_name;
+    public int climber_sequence_number;
+
+    Climber_State(String Name, int Number) {
+      this.climber_sequence_name = Name;
+      this.climber_sequence_number = Number;
+    }
+  }
+
+ /**
+   * This method changes the desired climber state to the next one
+   *
+   */
+  void nextClimberState() {
+    if (Climber_status.climber_sequence_number < 15) {
+      if (Climber_status.climber_sequence_number == 1) {
+        Climber_status = Climber_State.BeginMiddleClimb_2;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 2) {
+        Climber_status = Climber_State.ExtendMiddleClimb_3;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 3) {
+        Climber_status = Climber_State.FinishMiddleClimb_4;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 4) {
+        Climber_status = Climber_State.BeginTopClimb_5;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 5) {
+        Climber_status = Climber_State.ExtendTopClimbArms_6;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 6) {
+        Climber_status = Climber_State.RetractTopRung_7;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 7) {
+        Climber_status = Climber_State.ExtendMidRung_8;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 8) {
+        Climber_status = Climber_State.RetractMidRung_9;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 9) {
+        Climber_status = Climber_State.BeginTraversalClimb_10;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 10) {
+        Climber_status = Climber_State.ExtendTraversalClimbArms_11;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 11) {
+        Climber_status = Climber_State.RetractTraversalRung_12;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 12) {
+        Climber_status = Climber_State.ExtendTopRung_13;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 13) {
+        Climber_status = Climber_State.RetractTopRung_14;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 14) {
+        Climber_status = Climber_State.End_15;
+        climber_Timer.reset();
+      }
+    }
+  }
+
+   /**
+   * This method changes the desired climber state to the previous one
+   *
+   */
+  void previousClimberState() {
+    if (Climber_status.climber_sequence_number > 1) {
+      if  (Climber_status.climber_sequence_number == 2) {
+        Climber_status = Climber_State.Start_1;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 3) {
+        Climber_status = Climber_State.BeginMiddleClimb_2;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 4) {
+        Climber_status = Climber_State.ExtendMiddleClimb_3;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 5) {
+        Climber_status = Climber_State.FinishMiddleClimb_4;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 6) {
+        Climber_status = Climber_State.BeginTopClimb_5;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 7) {
+        Climber_status = Climber_State.ExtendTopClimbArms_6;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 8) {
+        Climber_status = Climber_State.RetractTopRung_7;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 9) {
+        Climber_status = Climber_State.ExtendMidRung_8;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 10) {
+        Climber_status = Climber_State.RetractMidRung_9;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 11) {
+        Climber_status = Climber_State.BeginTraversalClimb_10;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 12) {
+        Climber_status = Climber_State.ExtendTraversalClimbArms_11;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 13) {
+        Climber_status = Climber_State.RetractTraversalRung_12;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 14) {
+        Climber_status = Climber_State.ExtendTopRung_13;
+        climber_Timer.reset();
+      }
+      else if  (Climber_status.climber_sequence_number == 15) {
+        Climber_status = Climber_State.RetractTopRung_14;
+        climber_Timer.reset();
+      }
+    }
   }
 
   /**
@@ -470,143 +510,8 @@ public class Robot extends TimedRobot {
       intake_status = Intake_Deployment_State.down;
     }
   }
-
-      /**
-   * This subroutine completes the process of climbing the middle rung
-   *
-   */
-  void initiateMiddleRungClimb() {
-    if ((Climber_status == Climber_State.start) && (intake_status == Intake_Deployment_State.up)) {
-      climberArmCommand = -186000;
-      climber_motor1.set(ControlMode.Position, climberArmCommand);
-      LeftClimberSolenoid2.set(Value.kReverse);
-      RightClimberSolenoid2.set(Value.kReverse);
-      state4_Timer.reset();
-      state4_Timer.start();
-      Climber_status = Climber_State.part1ClimbMiddleRung;
-    }
-  }
-  void finalizeMiddleRungClimb() {
-    if (state4_Timer.get() >= 2.0){
-      if (Climber_status == Climber_State.part1ClimbMiddleRung) {
-        state4_Timer.stop();
-        LeftClimberSolenoid2.set(Value.kForward);
-        RightClimberSolenoid2.set(Value.kForward);
-        state4_Timer.reset();
-        state4_Timer.start();
-        Climber_status = Climber_State.part2ClimbMiddleRung;
-      }
-    }
-  }
-
-  void part1ClimbTopRung() {
-    if (state4_Timer.get() > 2.0){
-      if ((Climber_status == Climber_State.part2ClimbMiddleRung) && (intake_status == Intake_Deployment_State.up)) {
-        state4_Timer.stop();
-        climberArmCommand = -450000;
-        climber_motor1.set(ControlMode.Position, climberArmCommand);
-        state4_Timer.reset();
-        state4_Timer.start();
-        Climber_status = Climber_State.part1ClimbTopRung;
-      }
-    }
-  }
-
-  void part2ClimbTopRung() {
-    if (state4_Timer.get() > 2.0){
-      if ((Climber_status == Climber_State.part1ClimbTopRung) && (intake_status == Intake_Deployment_State.up)) {
-        state4_Timer.stop();
-        LeftClimberSolenoid1.set(Value.kReverse);
-        RightClimberSolenoid1.set(Value.kReverse);
-        state4_Timer.reset();
-        state4_Timer.start();
-        Climber_status = Climber_State.part2ClimbTopRung;
-      }
-    }
-  }
-
-  void part3ClimbTopRung() {
-    if (state4_Timer.get() > 2.0){
-      if ((Climber_status == Climber_State.part2ClimbTopRung) && (intake_status == Intake_Deployment_State.up)) {
-        state4_Timer.stop();
-        LeftClimberSolenoid1.set(Value.kForward);
-        RightClimberSolenoid1.set(Value.kForward);
-        LeftClimberSolenoid2.set(Value.kReverse);
-        RightClimberSolenoid2.set(Value.kReverse);
-        state4_Timer.reset();
-        state4_Timer.start();
-        Climber_status = Climber_State.part3ClimbTopRung;
-      }
-    }
-  }
-
-  void part1ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
-      if ((Climber_status == Climber_State.part3ClimbTopRung) && (intake_status == Intake_Deployment_State.up)) {
-        state4_Timer.stop();
-        state4_Timer.reset();
-        state4_Timer.start();
-        LeftClimberSolenoid2.set(Value.kForward);
-        RightClimberSolenoid2.set(Value.kForward);
-        Climber_status = Climber_State.part2ClimbTraversal;
-      }
-    }
-  }
-
-  void part2ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
-      if ((Climber_status == Climber_State.part2ClimbTraversal) && (intake_status == Intake_Deployment_State.up)) {
-        state4_Timer.stop();
-        climberArmCommand = -758000;
-        climber_motor1.set(ControlMode.Position, climberArmCommand);
-        state4_Timer.reset();
-        state4_Timer.start();
-        Climber_status = Climber_State.part3ClimbTraversal;
-      }
-    }
-  }
-
-  void part3ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
-      if ((Climber_status == Climber_State.part3ClimbTraversal) && (intake_status == Intake_Deployment_State.up)) {
-        state4_Timer.stop();
-        LeftClimberSolenoid2.set(Value.kReverse);
-        RightClimberSolenoid2.set(Value.kReverse);
-        state4_Timer.reset();
-        state4_Timer.start();
-        Climber_status = Climber_State.part4ClimbTraversal;
-      }
-    }
-  }
-
-  void part4ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
-      if ((Climber_status == Climber_State.part4ClimbTraversal) && (intake_status == Intake_Deployment_State.up)) {
-        state4_Timer.stop();
-        LeftClimberSolenoid2.set(Value.kForward);
-        RightClimberSolenoid2.set(Value.kForward);
-        LeftClimberSolenoid1.set(Value.kReverse);
-        RightClimberSolenoid1.set(Value.kReverse);
-        state4_Timer.reset();
-        state4_Timer.start();
-        Climber_status = Climber_State.part5ClimbTraversal;
-      }
-    }
-  }
-
-  void part5ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
-      if ((Climber_status == Climber_State.part5ClimbTraversal) && (intake_status == Intake_Deployment_State.up)){
-        LeftClimberSolenoid1.set(Value.kForward);
-        RightClimberSolenoid1.set(Value.kForward);
-        state4_Timer.stop();
-        Climber_status = Climber_State.end;
-      }
-    }
-    }
-    
-
-   /**
+  
+  /**
    * This subroutine moves the intake from the Down to the Up position
    *
    */
@@ -620,161 +525,179 @@ public class Robot extends TimedRobot {
     }  
   }
 
+  /**
+   * This method handles all of the climber states and related controls
+   * @param climb_forward The controller input (trigger) that moves the climber forward manually.
+   * @param climb_backward The controller input (trigger) that moves the climber backward manually.
+   */
+  void processClimberState(double climb_forward, double climb_backward) {
+    if (Climber_status == Climber_State.Start_1) {
+      climberSetPoint = climber_start_angle;
+    }
+    else if (Climber_status == Climber_State.BeginMiddleClimb_2) {
+      climberArmCommand = climber_middle_angle;
+    }
+    else if (Climber_status == Climber_State.ExtendMiddleClimb_3) {
+      LeftClimberSolenoid2.set(Value.kReverse);
+      RightClimberSolenoid2.set(Value.kReverse);
+    }
+    else if (Climber_status == Climber_State.FinishMiddleClimb_4) {
+      LeftClimberSolenoid2.set(Value.kForward);
+      RightClimberSolenoid2.set(Value.kForward);
+    }
+    else if (Climber_status == Climber_State.BeginTopClimb_5) {
+      climberSetPoint = climber_top_approach_angle;
+    }
+    else if (Climber_status == Climber_State.ExtendTopClimbArms_6) {
+      LeftClimberSolenoid1.set(Value.kReverse);
+      RightClimberSolenoid1.set(Value.kReverse);
+    }
+    else if (Climber_status == Climber_State.RetractTopRung_7) {
+      LeftClimberSolenoid1.set(Value.kForward);
+      RightClimberSolenoid1.set(Value.kForward);
+    }
+    else if (Climber_status == Climber_State.ExtendMidRung_8) {
+      LeftClimberSolenoid2.set(Value.kReverse);
+      RightClimberSolenoid2.set(Value.kReverse);
+    }
+    else if (Climber_status == Climber_State.RetractMidRung_9) {
+      LeftClimberSolenoid2.set(Value.kForward);
+      RightClimberSolenoid2.set(Value.kForward);
+    }
+    else if (Climber_status == Climber_State.BeginTraversalClimb_10) {
+      climberSetPoint = climber_traversal_approach_angle;
+    }
+    else if (Climber_status == Climber_State.ExtendTraversalClimbArms_11) {
+      LeftClimberSolenoid2.set(Value.kReverse);
+      RightClimberSolenoid2.set(Value.kReverse);
+    }
+    else if (Climber_status == Climber_State.RetractTraversalRung_12) {
+      LeftClimberSolenoid2.set(Value.kForward);
+      RightClimberSolenoid2.set(Value.kForward);
+    }
+    else if (Climber_status == Climber_State.ExtendTopRung_13) {
+      LeftClimberSolenoid1.set(Value.kReverse);
+      RightClimberSolenoid1.set(Value.kReverse);
+    }
+    else if (Climber_status == Climber_State.RetractTopRung_14) {
+      LeftClimberSolenoid1.set(Value.kForward);
+      RightClimberSolenoid1.set(Value.kForward);
+    }
+    else if (Climber_status == Climber_State.End_15) {
+      climberSetPoint = climber_end_angle;
+    }
+
+    // the following allows the copilot to move the climber arms together either forward or background by holding either
+    // of the shoulder trigger buttons. The harder you press, the further it changes. Every 20 msec, at full press, the
+    // climber would change ~600 counts or ~30000 counts (~15 degrees) per second.
+    climberArmAdjust = climberArmAdjust + 600*climb_forward - 600*climb_backward;
+
+    //      CLIMBER ARM COMMAND CLAMPING LOGIC
+    // the following block of code ensures that the climber arms can never be driven beyond safe operating ranges
+    // if the driver attempts to command beyond the safe limit, only the min/max safe command is applied
+    if ((climberSetPoint + climberArmAdjust) < minimum_climber_limit) {
+      climberArmCommand = minimum_climber_limit;
+    }
+    else if ((climberSetPoint + climberArmCommand) > maximum_climber_limit) {
+      climberArmCommand = maximum_climber_limit;
+    }
+    else {
+      climberSetPoint = climberArmCommand + climberArmAdjust;
+    }
+  climber_motor1.set(ControlMode.Position, climberSetPoint);
+  }  
+
+  /**
+   * This method handles all of the climber states and related controls
+   * @param joystick_intake_command The controller input (button) that commands intake action.
+   * @param joystick_shoot_command The controller input (button) that commands shoot action.
+   */
+  void processCargoState(boolean joystick_intake_command, boolean joystick_shoot_command) {
+    if ((cargo_status == Cargo_State.Idle) && joystick_intake_command) { // starts cargo intake on single press
+      cargo_status = Cargo_State.Cargo_being_intaked;
+      intake_Timer.reset();
+      intake_Timer.start();      
+    }
+    else if (cargo_status == Cargo_State.Cargo_being_intaked) {
+      if (conveyor_loc_1.get() == true) { // if cargo is not seen, keep attempting to intake
+        intake_motor1.set(0.8);
+        conveyer1.set(0.8);
+      }
+      else if (conveyor_loc_1.get() == false) { // if cargo is seen, stop the intake are start shooting process
+        intake_motor1.set(0);
+        conveyer1.set(0);
+        intake_Timer.stop();
+        cargo_status = Cargo_State.Cargo_awaiting_shooter;
+      }
+
+      if (intake_Timer.get() > 4.0) { // if it has been 4 seconds and no cargo seen, then halt and clear state
+        intake_motor1.set(0);
+        conveyer1.set(0);
+        intake_Timer.stop();
+        cargo_status = Cargo_State.Idle;
+      }     
+    }
+    else if (cargo_status == Cargo_State.Cargo_awaiting_shooter) {
+      if (joystick_intake_command) { // This allows you to intake another cargo after one has already completely entered
+        intake_motor1.set(0.8);
+      }
+      else {
+        intake_motor1.set(0);
+      }
+
+      if (joystick_shoot_command) { // This only runs the shooter while the button is held
+        shooter_motor1.set(ControlMode.Velocity, 18000);
+      }
+      else {
+        shooter_motor1.set(ControlMode.Velocity, 0);
+      }
+
+      if (shooter_motor1.getSelectedSensorVelocity() >= 17500) { // only starts the cargo firing process after speed is achieved
+        shooter_Timer.reset();
+        shooter_Timer.start();      
+        cargo_status = Cargo_State.Cargo_being_shot;
+      }
+    }
+    else if (cargo_status == Cargo_State.Cargo_being_shot) {
+      intake_motor1.set(0);
+      conveyer1.set(0.8);
+      if (shooter_Timer.get() > 1.5){ // this ensures the shooter is cleared of cargo
+        conveyer1.set(0);
+        shooter_motor1.set(0);
+        shooter_Timer.stop();
+        cargo_status = Cargo_State.Idle;
+      }
+    }
+  }
+
+  /**
+   * This subroutine moves the drive train to face the hub
+   *
+   */
   void autoAim() {
     if (Math.abs(tx_angle) > 10.0){
       //tarzan_robot.tankDrive(0.6*tx_angle/27, -0.6*tx_angle/27);
-      newDrive(750*tx_angle,-750*tx_angle);
+      drive(750*tx_angle,-750*tx_angle);
     }
     else if ((tx_angle >0.5) && (tx_angle < 10.0)){
       //tarzan_robot.tankDrive(0.30, -0.30);
-      newDrive(3000, -3000);
+      drive(3000, -3000);
     }
     else if ((tx_angle > -10) && (tx_angle <-0.5)){
       //tarzan_robot.tankDrive(-0.30, 0.30);
-      newDrive(-3000, 3000);
+      drive(-3000, 3000);
     }
     else{
       //tarzan_robot.tankDrive(0, 0);
       //cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;  //How and why did this get here?
-      newDrive(0, 0);
+      drive(0, 0);
     }
   }
 
-  void compressorTest() {
-    if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 0)){
-      LeftClimberSolenoid1.set(Value.kForward); //right1 solenoid retract
-      RightClimberSolenoid1.set(Value.kForward); //left1 solenoid retract
-    }  
-    else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 0)){
-      LeftClimberSolenoid1.set(Value.kReverse); //right1 solenoid extend
-      RightClimberSolenoid1.set(Value.kReverse); //left1 solenoid extend
-    }
-    else if(driver_joystick.getRawButton(4) && (driver_joystick.getPOV() == 180)){
-      LeftClimberSolenoid2.set(Value.kForward); //right2 solenoid retract
-      RightClimberSolenoid2.set(Value.kForward); //left2 solenoid retract
-    }
-    else if(driver_joystick.getRawButton(2) && (driver_joystick.getPOV() == 180)){   
-      LeftClimberSolenoid2.set(Value.kReverse); //right2 solenoid extend
-      RightClimberSolenoid2.set(Value.kReverse); //left2 solenoid extend
-    }
-    else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(4)){
-      IntakeSolenoid.set(Value.kForward);
-    }  
-    else if(driver_joystick.getRawButton(8) && driver_joystick.getRawButton(2)){
-      IntakeSolenoid.set(Value.kReverse);
-    }
-  }
-
-  void climberTest() {
-    climber_motor1.set(copilot_joystick.getRawAxis(5));
-  }
-
-  void IntakeTest1() {
-    if ((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6))) {
-      cargo_status = Robot_Cargo_State.Cargo_being_intaked;
-      state2_Timer.start();
-    }
-    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-      intake_motor1.set(0.8); //running intake
-      conveyer1.set(0.8); //running conveyer
-      if (state2_Timer.get() > 4.0) {
-        intake_motor1.set(0);
-        conveyer1.set(0);
-        shooter_motor1.set(0);
-        cargo_status = Robot_Cargo_State.Idle;
-      }
-    } 
-    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == false)) {
-      cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;
-      intake_motor1.set(0); //stopping intake
-      conveyer1.set(0); //stopping conveyer
-    }
-  }
-
-  void IntakeReverseTest() {
-    if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(3))) {
-      state2_Timer.start();
-      cargo_status = Robot_Cargo_State.Ejecting;
-      intake_motor1.set(-0.8);
-      conveyer1.set(-0.8);
-    }
-    else if (cargo_status == Robot_Cargo_State.Ejecting) {
-      if (state2_Timer.get() > 4.0) {
-        intake_motor1.set(0);
-        conveyer1.set(0);
-        state2_Timer.stop();
-        cargo_status = Robot_Cargo_State.Idle;
-      } 
-    }
-  }
-
-  void nonlinearDrive(double x, double y) { //x = driver_joystick.getRawAxis(1) && y = driver_joystick.getRawAxis(5)
-    //tarzan_robot.tankDrive(-0.5*Math.signum(x)*Math.pow(x,1.5), -0.5*Math.signum(y)*Math.pow(y,1.5));
-  }
-
-  /**
-     * This method provides controls to the copilot to manually manipulate the climber in a controlled way.
-     *
-     *        COPILOT JOYSTICK
-     * Right Trigger (raw axis 3) = Rotate the climber forwards at 5 degrees per second.
-     * Left Trigger (raw axis 2) = Rotate the climber backwards at 5 degrees per second. 
-     * Y (button 4) = Left 1 and Right 1 Extend.
-     * B (button 2) = Left 1 and Right 1 Retract.
-     * X (button 3) = Left 2 and Right 2 Extend.
-     * A (button 1) = Left 2 and Right 2 Retract.
-     *
-     */
-  void climberTest2() {
-    if (intake_status == Intake_Deployment_State.up) {
-      // the following allows the copilot to move the climber arms together either forward or background by holding either
-      // of the shoulder trigger buttons. The harder you press, the further it changes. Every 20 msec, at full press, the
-      // climber would change ~200 counts or ~10000 counts (5 degrees) per second.
-      climberArmCommand = climberArmCommand + 600*copilot_joystick.getRawAxis(3) - 600*copilot_joystick.getRawAxis(2);
-
-      //      CLIMBER ARM COMMAND CLAMPING LOGIC
-      // the following block of code ensures that the climber arms can never be driven beyond safe operating ranges
-      // if the driver attempts to command beyond the safe limit, only the min/max safe command is applied
-      if (climberArmCommand < minimum_climber_limit) {
-        climberArmCommand = minimum_climber_limit;
-      }
-      else if (climberArmCommand > maximum_climber_limit) {
-        climberArmCommand = maximum_climber_limit;
-      }
-
-      // this actually applies the climber arm command to the control loop
-      climber_motor1.set(ControlMode.Position, climberArmCommand);
-      climber_motor2.set(ControlMode.Position, climberArmCommand);
-      // this allows the copilot to command the climber arm pistons (a pair at a time) by pressing the four face buttons
-      // Y (button 4) = Left 1 and Right 1 Extend
-      // B (button 2) = Left 1 and Right 1 Retract
-      // X (button 3) = Left 2 and Right 2 Extend
-      // A (button 1) = Left 2 and Right 2 Retract
-      /*
-        if (copilot_joystick.getRawButton(4)) {
-        LeftClimberSolenoid1.set(Value.kReverse);
-        RightClimberSolenoid1.set(Value.kReverse);
-      }
-      if (copilot_joystick.getRawButton(2)) {
-        LeftClimberSolenoid1.set(Value.kForward);
-        RightClimberSolenoid1.set(Value.kForward);
-      }
-      if (copilot_joystick.getRawButton(3)) {
-        LeftClimberSolenoid2.set(Value.kReverse);
-        RightClimberSolenoid2.set(Value.kReverse);
-      }
-      if (copilot_joystick.getRawButton(1)) {
-        LeftClimberSolenoid2.set(Value.kForward);
-        RightClimberSolenoid2.set(Value.kForward);
-      }
-      */
-    }
-  }
-
-  /**
-     * This method updates the relative position sense of the climber 1 motor to match the true position at the
-     * climber arm shaft
-     *
-     */
+    /**
+   * This subroutine updates the climber relative encoder value to sync up with the shaft absolute encoder feedback
+   *
+   */
   void updateClimberMotorPosition() {
     // climberEncoder.get() returns the true climber arm shaft angle. * by 360 converts it to degrees. Subtracting
     // 117.36 is based on measurements that offset the angle so that it reads 0 when the climber is horizontal
@@ -789,7 +712,13 @@ public class Robot extends TimedRobot {
     // calling this function periodically would also correct for those misalignments as well.
     climber_motor1.setSelectedSensorPosition(1777.78*(climberEncoder.get()*360 - 117.36));
   }
-  void newDrive(double leftControl, double rightControl) {
+
+  /**
+   * This method controls the drive train using a basic velocity tank control mode.
+   * @param leftControl The controller input (stick) that commands the left side.
+   * @param rightControl The controller input (stick) that commands the right side.
+   */
+  void drive(double leftControl, double rightControl) {
     driver_leftmotor1.set(ControlMode.Velocity, leftControl);
     driver_rightmotor1.set(ControlMode.Velocity, rightControl);
   }
