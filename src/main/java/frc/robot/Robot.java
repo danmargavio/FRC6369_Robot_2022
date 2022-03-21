@@ -235,7 +235,6 @@ public class Robot extends TimedRobot {
     * Back (button 7) AND A (button 1) = Perform Middle Rung Climb
     * A button (button 1) = Run AutoAim function while holding
     * Right Bumper (button 6) = Perform Autoshoot function while holding (completes after 1.5 seconds)
-<<<<<<< HEAD
     * Start (button 8) = Force robot back to Idle
 
     *           PILOT JOYSTICK
@@ -255,19 +254,6 @@ public class Robot extends TimedRobot {
           moveIntakeDowntoUp();
         }
         if (copilot_joystick.getPOV() == 180){
-=======
-    * UP D-PAD (pov 0) = Move Intake Up
-    * DOWN D-PAD (pov 180) = Move Intake Down
-    * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)  
-    *           PILOT JOYSTICK
-    * Left Stick Up/Down (raw axis 1) = Move Robot left side
-    * Right Stick Up/Down (raw axis 5) = Move Robot right side  
-    **/
-        if (copilot_joystick.getPOV()== 0){ // Up on the D-Pad
-          moveIntakeDowntoUp();
-        }
-        if (copilot_joystick.getPOV()== 180){ //Right on the D-PAD
->>>>>>> c5f63eddd8250ffe2143327ab93dc83417594aea
           moveIntakeUptoDown();
         }
 
@@ -283,13 +269,8 @@ public class Robot extends TimedRobot {
         }
         //Intake (positive inputs intake a cargo)
         if (intake_status == Intake_Deployment_State.down){
-<<<<<<< HEAD
           //autoIntake(); // currently replaces manualIntake();
           manualIntake();
-=======
-          autoIntake(); // currently replaces manualIntake();
-          //manualIntake();
->>>>>>> c5f63eddd8250ffe2143327ab93dc83417594aea
         }
 
         //autoShoot(); //shoot
