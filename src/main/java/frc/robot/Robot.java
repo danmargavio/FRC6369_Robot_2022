@@ -39,7 +39,7 @@ public class Robot extends TimedRobot {
 
   // Setup the pneumatics devices,
   Compressor phCompressor = new Compressor(1, PneumaticsModuleType.REVPH);
-  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 15); /* Make sure channel number associates with kReverse and Forward Ex: Channel 6 brings down (kReverse) and vice versa with channel 7*/
+  DoubleSolenoid IntakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.REVPH, 0, 15); 
   DoubleSolenoid RightClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 4, 11); //Kforward is Retract and KReverse is Extend
   DoubleSolenoid LeftClimberSolenoid1 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 1, 14);
   DoubleSolenoid RightClimberSolenoid2 = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2, 13);
@@ -74,6 +74,8 @@ public class Robot extends TimedRobot {
   private final double climber_traversal_approach_angle = -800000;
   private final double climber_end_angle = -830000; 
   private final double climber_timeout = 1.0; // units in seconds
+  private final double drive_topspeed = 40000; // units in counts per 100 msec at drivetrain shaft
+  private final int autoMode = 0; // simple way to adjust autonomous behavior (0 is normal, 1 is no shoot, 2 is nothing)
   
   @Override
   public void robotInit() {
@@ -237,11 +239,14 @@ public class Robot extends TimedRobot {
     *          COPILOT JOYSTICK
     * Up D-PAD (pov 0) = Move Intake Up
     * Down D-PAD (pov 180) = Move Intake Down
-    * Left D-Pad = Go to Previous Climb State
-    * Right D-Pad = Go to Next Climb State
+    * Left D-Pad (pov 270) = Go to Previous Climb State
+    * Right D-Pad (pov 90) = Go to Next Climb State
+    * Right trigger (raw axis 2) = Climb backward slowly
+    * Left trigger (raw axis 3) = Climb forward slowly 
     * A button (button 1) = Run AutoAim function while holding
     * Right Bumper (button 6) = Perform Autoshoot function while holding (completes after 1.5 seconds)
-    * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels)  
+    * Left Bumper (button 5) = Perform Autointake function while holding (after 4 seconds of no pressing, it cancels). Pressing
+    * the button after intake is complete will run the intake motor forward to allow for a 2nd cargo being brought it.
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side  
@@ -272,7 +277,7 @@ public class Robot extends TimedRobot {
       autoAim();
     }
     else {
-      drive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxis(5));
+      drive(-1*drive_topspeed*driver_joystick.getRawAxis(1), -1*drive_topspeed*driver_joystick.getRawAxis(5));
     }
   }
 
