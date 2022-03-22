@@ -59,6 +59,7 @@ public class Robot extends TimedRobot {
   private Climber_State Climber_status = Climber_State.start;
   private final Timer state4_Timer = new Timer();
   private final Timer state2_Timer = new Timer();
+  private final Timer deBounce = new Timer();
   private double tx_angle;
   private double ty_angle = -1000.0; //target degrees above the center of the camera
   private double climberArmCommand = 0.0; //variable used to actively control the position of the climber arms; units are in counts at the climber1 motor shaft
@@ -71,6 +72,8 @@ public class Robot extends TimedRobot {
   private final double desiredDistanceFromGoal = 150; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
   private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
   private final double maximum_climber_limit = 28500; // this is the absolute maximum safe climber arm rotation limit
+  
+  private boolean button_toggle_1 = false;
   
   @Override
   public void robotInit() {
@@ -113,6 +116,10 @@ public class Robot extends TimedRobot {
     driver_rightmotor2.configClosedloopRamp(0.75);
     driver_leftmotor1.configClosedloopRamp(0.75);
     driver_leftmotor2.configClosedloopRamp(0.75);
+    driver_rightmotor1.configOpenloopRamp(0.25);
+    driver_rightmotor2.configOpenloopRamp(0.25);
+    driver_leftmotor1.configOpenloopRamp(0.25);
+    driver_leftmotor2.configOpenloopRamp(0.25);
 
     // Shooter Control Loop Settings
     shooter_motor1.configNeutralDeadband(0.001);
@@ -163,6 +170,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("Robot Idle State", (cargo_status == Robot_Cargo_State.Idle));
     SmartDashboard.putBoolean("Cargo Being Intaked", (cargo_status == Robot_Cargo_State.Cargo_being_intaked));
     SmartDashboard.putNumber("Timer 2", state2_Timer.get());
+    SmartDashboard.putNumber("shooter speed", shooter_motor1.getSelectedSensorVelocity());
     
 
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
@@ -173,6 +181,7 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     state4_Timer.start();
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(0);
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("ledMode").setNumber(3);
     cargo_status = Robot_Cargo_State.Cargo_being_intaked;
   }
 
@@ -221,6 +230,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     cargo_status = Robot_Cargo_State.Idle;
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("ledMode").setNumber(3);
   }
 
   @Override
@@ -242,35 +252,27 @@ public class Robot extends TimedRobot {
     +
     
     **/
-        if (copilot_joystick.getRawButton(8)) {
-          cargo_status = Robot_Cargo_State.Idle;
-        }
-
-        if (copilot_joystick.getPOV() == 0){
-          moveIntakeDowntoUp();
-        }
-        if (copilot_joystick.getPOV() == 180){
-          moveIntakeUptoDown();
-        }
 
         //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
-        if (copilot_joystick.getRawButton(1)){
+        if (copilot_joystick.getRawButton(6)){
           autoAim();
 
         }
         else{
-          //tarzan_robot.tankDrive(-0.75*driver_joystick.getRawAxis(1), -0.75*driver_joystick.getRawAxis(5));
-          newDrive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxis(5));
-          //nonlinearDrive(driver_joystick.getRawAxis(1), driver_joystick.getRawAxis(5));
+           //newDrive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxis(5));
+           newDrive2(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
         }
-        //Intake (positive inputs intake a cargo)
-        if (intake_status == Intake_Deployment_State.down){
-          //autoIntake(); // currently replaces manualIntake();
-          manualIntake();
-        }
+
+        
+        expelCargo(copilot_joystick, 2); // b hold
+        flyWheelToggle(copilot_joystick, 6); // right bumper toggle
+        shootCargo(copilot_joystick, 3); // right trigger hold
+        intakeCargo(copilot_joystick, 2); // left trigger
+        stopCargo(copilot_joystick, 5); // left bumper
+
 
         //autoShoot(); //shoot
-
+        /*
         climberTest2();
 
         if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
@@ -285,10 +287,15 @@ public class Robot extends TimedRobot {
           part4ClimbTraversal();
           part5ClimbTraversal();        
         }
+        */
+
   }
 
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("ledMode").setNumber(1);
+  }
 
   @Override
   public void disabledPeriodic() {}
@@ -676,6 +683,73 @@ public class Robot extends TimedRobot {
   void climberTest() {
     climber_motor1.set(copilot_joystick.getRawAxis(5));
   }
+  
+
+  void intakeCargo(Joystick controller, int axis){
+    if (controller.getRawAxis(axis) >= 0.5){
+      moveIntakeUptoDown();
+      intake_motor1.set(0.8);
+      if (conveyor_loc_1.get() == true){
+        conveyer1.set(0.8);
+      }
+    }
+    if ((conveyor_loc_1.get() == false) && (shooter_motor1.getSelectedSensorVelocity() < 100)) {
+      conveyer1.set(0);
+    }
+  }
+
+  void stopCargo(Joystick controller, int button){ //call this last
+    if (controller.getRawButton(button)){
+      intake_motor1.set(0);
+      conveyer1.set(0);
+      moveIntakeDowntoUp();
+    }
+  }
+
+  void expelCargo(Joystick controller, int button){
+    if (controller.getRawButton(button) == true){
+      moveIntakeUptoDown();
+      intake_motor1.set(-0.8);
+      conveyer1.set(-0.8);
+    }
+  }
+
+  boolean toggleControl(Joystick controller, int button){
+    if (controller.getRawButton(button)){
+      deBounce.start();
+      if ((button_toggle_1 == true) && (deBounce.get() > 0.3)){
+        button_toggle_1 = false;
+        deBounce.stop();
+        deBounce.reset();
+      }
+      else if ((button_toggle_1 == false) && (deBounce.get() > 0.3)){
+        button_toggle_1 = true; 
+        deBounce.stop();
+        deBounce.reset();     
+      }
+    }
+    return button_toggle_1;
+  }
+
+  void shootCargo(Joystick controller, int axis){
+    if (controller.getRawAxis(axis) >= 0.5){
+      //if ((shooter_motor1.getSelectedSensorVelocity() > 17500) && (shooter_motor1.getSelectedSensorVelocity() < 18500)){
+        conveyer1.set(0.8);
+      //}
+    }
+  }
+  
+  void flyWheelToggle(Joystick controller, int button){
+
+    if (toggleControl(controller, button) == true){
+      shooter_motor1.set(0.825);
+    }
+    else {
+      shooter_motor1.set(0);
+    }
+    
+  }
+
 
   void IntakeTest1() {
     if ((cargo_status == Robot_Cargo_State.Idle) && (copilot_joystick.getRawButton(6))) {
@@ -800,5 +874,10 @@ public class Robot extends TimedRobot {
   void newDrive(double leftControl, double rightControl) {
     driver_leftmotor1.set(ControlMode.Velocity, leftControl);
     driver_rightmotor1.set(ControlMode.Velocity, rightControl);
+  }
+
+  void newDrive2(double leftControl, double rightControl) {
+    driver_leftmotor1.set(leftControl);
+    driver_rightmotor1.set(rightControl);
   }
 }
