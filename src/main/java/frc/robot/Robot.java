@@ -151,7 +151,7 @@ public class Robot extends TimedRobot {
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
 
     //Setup compressor controls for analog pressure transducer
-    phCompressor.enableAnalog(110, 120);
+    phCompressor.enableAnalog(120, 120);
     phCompressor.enabled();
 
     //Initializes Solenoids on position 'A'
