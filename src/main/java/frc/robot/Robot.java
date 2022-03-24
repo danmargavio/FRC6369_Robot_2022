@@ -246,7 +246,6 @@ public class Robot extends TimedRobot {
     * A button (button 1) = Run AutoAim function while holding
     * Right Bumper (button 6) = Perform Autoshoot function while holding (completes after 1.5 seconds)
     * Start (button 8) = Force robot back to Idle
-
     *           PILOT JOYSTICK
     * Left Stick Up/Down (raw axis 1) = Move Robot left side
     * Right Stick Up/Down (raw axis 5) = Move Robot right side
@@ -275,9 +274,8 @@ public class Robot extends TimedRobot {
 
 
         //autoShoot(); //shoot
-        
-        //climberTest2();
-        
+        climberManualAdjustment(copilot_joystick);
+        climberTest2();
         if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
           initiateMiddleRungClimb();
           finalizeMiddleRungClimb();
@@ -479,6 +477,13 @@ public class Robot extends TimedRobot {
    * This subroutine moves the intake from the Up to the Down position
    *
    */
+
+  void climberManualAdjustment(Joystick controller){
+    
+    climberArmCommand = climberArmCommand + 600*copilot_joystick.getRawAxis(1);
+
+  }
+
   void moveIntakeUptoDown() {
     if (intake_status == Intake_Deployment_State.up) {
       intake_motor1.set(0);
@@ -505,7 +510,7 @@ public class Robot extends TimedRobot {
     }
   }
   void finalizeMiddleRungClimb() {
-    if (state4_Timer.get() >= 2.0){
+    if (state4_Timer.get() >= 0.5){
       if (Climber_status == Climber_State.part1ClimbMiddleRung) {
         state4_Timer.stop();
         LeftClimberSolenoid2.set(Value.kForward);
@@ -518,7 +523,7 @@ public class Robot extends TimedRobot {
   }
 
   void part1ClimbTopRung() {
-    if (state4_Timer.get() > 2.0){
+    if (state4_Timer.get() > 0.5){
       if ((Climber_status == Climber_State.part2ClimbMiddleRung) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
         climberArmCommand = -450000;
@@ -531,7 +536,7 @@ public class Robot extends TimedRobot {
   }
 
   void part2ClimbTopRung() {
-    if (state4_Timer.get() > 2.0){
+    if (state4_Timer.get() > 0.5){
       if ((Climber_status == Climber_State.part1ClimbTopRung) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
         LeftClimberSolenoid1.set(Value.kReverse);
@@ -544,7 +549,7 @@ public class Robot extends TimedRobot {
   }
 
   void part3ClimbTopRung() {
-    if (state4_Timer.get() > 2.0){
+    if (state4_Timer.get() > 0.5){
       if ((Climber_status == Climber_State.part2ClimbTopRung) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
         LeftClimberSolenoid1.set(Value.kForward);
@@ -559,7 +564,7 @@ public class Robot extends TimedRobot {
   }
 
   void part1ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
+    if (state4_Timer.get() > 0.5){
       if ((Climber_status == Climber_State.part3ClimbTopRung) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
         state4_Timer.reset();
@@ -572,7 +577,7 @@ public class Robot extends TimedRobot {
   }
 
   void part2ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
+    if (state4_Timer.get() > 0.5){
       if ((Climber_status == Climber_State.part2ClimbTraversal) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
         climberArmCommand = -758000;
@@ -585,7 +590,7 @@ public class Robot extends TimedRobot {
   }
 
   void part3ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
+    if (state4_Timer.get() > 0.5){
       if ((Climber_status == Climber_State.part3ClimbTraversal) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
         LeftClimberSolenoid2.set(Value.kReverse);
@@ -598,7 +603,7 @@ public class Robot extends TimedRobot {
   }
 
   void part4ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
+    if (state4_Timer.get() > 0.5){
       if ((Climber_status == Climber_State.part4ClimbTraversal) && (intake_status == Intake_Deployment_State.up)) {
         state4_Timer.stop();
         LeftClimberSolenoid2.set(Value.kForward);
@@ -613,7 +618,7 @@ public class Robot extends TimedRobot {
   }
 
   void part5ClimbTraversal() {
-    if (state4_Timer.get() > 2.0){
+    if (state4_Timer.get() > 0.5){
       if ((Climber_status == Climber_State.part5ClimbTraversal) && (intake_status == Intake_Deployment_State.up)){
         LeftClimberSolenoid1.set(Value.kForward);
         RightClimberSolenoid1.set(Value.kForward);
@@ -654,7 +659,7 @@ public class Robot extends TimedRobot {
     else{
       //tarzan_robot.tankDrive(0, 0);
       //cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;  //How and why did this get here?
-      newDrive(0, 0);
+      newDrive2(0, 0);
     }
   }
 
