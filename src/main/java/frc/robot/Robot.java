@@ -151,7 +151,7 @@ public class Robot extends TimedRobot {
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
 
     //Setup compressor controls for analog pressure transducer
-    phCompressor.enableAnalog(120, 120);
+    phCompressor.enableAnalog(119, 120);
     phCompressor.enabled();
 
     //Initializes Solenoids on position 'A'
@@ -276,8 +276,8 @@ public class Robot extends TimedRobot {
 
         //autoShoot(); //shoot
         
-        climberTest2();
-
+        //climberTest2();
+        
         if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
           initiateMiddleRungClimb();
           finalizeMiddleRungClimb();
@@ -654,7 +654,7 @@ public class Robot extends TimedRobot {
     else{
       //tarzan_robot.tankDrive(0, 0);
       //cargo_status = Robot_Cargo_State.Cargo_awaiting_shooter;  //How and why did this get here?
-      newDrive2(0, 0);
+      newDrive(0, 0);
     }
   }
 
