@@ -19,6 +19,8 @@ import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.shuffleboard.*;
+
 public class Robot extends TimedRobot {
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -74,8 +76,25 @@ public class Robot extends TimedRobot {
   private final double maximum_climber_limit = 28500; // this is the absolute maximum safe climber arm rotation limit
   private final double hapticFeedbackPercent = 0.65;
   private boolean button_toggle_1 = false;
-  
-  
+
+  private double shooter_Kp = 0.015;
+  private double shooter_Kd = 0.0;
+  private double shooter_Ki = 0.0;
+  private double shooter_Kf = 0.0;
+  private double shooter_setpoint = 1450;
+  private ShuffleboardTab tab = Shuffleboard.getTab("PIDF Tuning");
+  private NetworkTableEntry tab_shooter_Kp = tab.add("Actual Proportional Gain", 0).getEntry();
+  private NetworkTableEntry tab_shooter_Kd = tab.add("Actual Derivative Gain", 0).getEntry();
+  private NetworkTableEntry tab_shooter_Ki = tab.add("Actual Integral Gain", 0).getEntry();
+  private NetworkTableEntry tab_shooter_Kf = tab.add("Actual Feed Forward", 0).getEntry();
+  private NetworkTableEntry tab_shooter_setpoint = tab.add("Actual Set Point", 0).getEntry();
+  private NetworkTableEntry tab_shooter_speed = tab.add("Shooter Speed", 0).getEntry();
+  private NetworkTableEntry tab_input_shooter_Kp = tab.addPersistent("Input Proportional Gain", 0).getEntry();
+  private NetworkTableEntry tab_input_shooter_Kd = tab.addPersistent("Input Derivative Gain", 0).getEntry();
+  private NetworkTableEntry tab_input_shooter_Ki = tab.addPersistent("Input Integral Gain", 0).getEntry();
+  private NetworkTableEntry tab_input_shooter_Kf = tab.addPersistent("Input Feed Forward", 0).getEntry();
+  private NetworkTableEntry tab_input_shooter_setpoint = tab.addPersistent("Input Set Point", 0).getEntry();
+
   @Override
   public void robotInit() {
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("ledMode").setNumber(1);
@@ -159,7 +178,14 @@ public class Robot extends TimedRobot {
     RightClimberSolenoid1.set(Value.kForward);
     RightClimberSolenoid2.set(Value.kForward);
     LeftClimberSolenoid1.set(Value.kForward);
-    LeftClimberSolenoid2.set(Value.kForward);
+    LeftClimberSolenoid2.set(Value.kForward);    
+    
+    tab_shooter_Kp.setDouble(shooter_Kp);
+    tab_shooter_Kd.setDouble(shooter_Kd);
+    tab_shooter_Ki.setDouble(shooter_Ki);
+    tab_shooter_Kf.setDouble(shooter_Kf);
+    tab_shooter_setpoint.setDouble(shooter_setpoint);
+    tab_shooter_speed.setDouble(shooter_motor1.getSelectedSensorVelocity());
   }
 
   @Override
@@ -173,6 +199,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("Cargo Being Intaked", (cargo_status == Robot_Cargo_State.Cargo_being_intaked));
     SmartDashboard.putNumber("Timer 2", state2_Timer.get());
     SmartDashboard.putNumber("shooter speed", shooter_motor1.getSelectedSensorVelocity());
+
     
 
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
@@ -304,26 +331,42 @@ public class Robot extends TimedRobot {
   @Override
   public void testInit() {
     cargo_status = Robot_Cargo_State.Idle;
-    updateClimberMotorPosition(); // Test it first without this, then add it in
   }
 
   @Override
   public void testPeriodic() {
-    //tarzan_robot.tankDrive(-0.5*driver_joystick.getRawAxis(1), -0.5*driver_joystick.getRawAxis(5));
-    newDrive(-35000*driver_joystick.getRawAxis(1), -35000*driver_joystick.getRawAxis(5));
 
-    //         COPILOT JOYSTICK
-    // Back Button (raw button 7) = Move Intake from Down to Up.
-    if (copilot_joystick.getRawButton(7)){
-      moveIntakeDowntoUp();
+    // Update PIDF parameters from whatever is currently entered on the Smartdashboard
+    shooter_Kp = tab_input_shooter_Kp.getDouble(0.015);
+    shooter_Kd = tab_input_shooter_Kd.getDouble(0.0);
+    shooter_Ki = tab_input_shooter_Ki.getDouble(0.0);
+    shooter_Kf = tab_input_shooter_Kf.getDouble(2048/2200);
+    shooter_setpoint = tab_input_shooter_setpoint.getDouble(1450);
+
+    // Display the latest actual settings onto the Smartdashboard
+    tab_shooter_Kp.setDouble(shooter_Kp);
+    tab_shooter_Kd.setDouble(shooter_Kd);
+    tab_shooter_Ki.setDouble(shooter_Ki);
+    tab_shooter_Kf.setDouble(shooter_Kf);
+    tab_shooter_setpoint.setDouble(shooter_setpoint);
+    tab_shooter_speed.setDouble(shooter_motor1.getSelectedSensorVelocity());
+
+		shooter_motor1.config_kP(0, shooter_Kp, 30);
+		shooter_motor1.config_kI(0, shooter_Ki, 30);
+		shooter_motor1.config_kD(0, shooter_Kd, 30);
+    shooter_motor1.config_kF(0, shooter_Kf, 30);
+		shooter_motor2.config_kP(0, shooter_Kp, 30);
+		shooter_motor2.config_kI(0, shooter_Ki, 30);
+		shooter_motor2.config_kD(0, shooter_Kd, 30);
+    shooter_motor2.config_kF(0, shooter_Kf, 30);
+
+    if (driver_joystick.getRawButton(3)) {
+      shooter_motor1.set(ControlMode.Velocity, shooter_setpoint);
     }
-    //         COPILOT JOYSTICK
-    // Start Button (raw button 8) = Move Intake from Up to Down.
-    if (copilot_joystick.getRawButton(8)){
-      moveIntakeUptoDown();
+    else {
+      shooter_motor1.set(0);
     }
-    climberTest2();
-    updateClimberMotorPosition(); // Test it first without this, then add it in
+    
   }
 
     /**
