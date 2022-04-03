@@ -78,6 +78,12 @@ public class Robot extends TimedRobot {
   
   @Override
   public void robotInit() {
+    System.out.println("==========================");
+    System.out.println("FRC 6369 Robot Software");
+    System.out.println("Project: Week2_New_Controls");
+    System.out.println("Version: v1.0");
+    System.out.println("==========================");
+
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("ledMode").setNumber(1);
     shooter_motor1.configFactoryDefault();
     shooter_motor2.configFactoryDefault();
@@ -172,9 +178,9 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Climber 1 Encoder (counts)", climber_motor1.getSelectedSensorPosition());
     SmartDashboard.putBoolean("Robot Idle State", (cargo_status == Robot_Cargo_State.Idle));
     SmartDashboard.putBoolean("Cargo Being Intaked", (cargo_status == Robot_Cargo_State.Cargo_being_intaked));
-    SmartDashboard.putNumber("Timer 2", state2_Timer.get());
+    //SmartDashboard.putNumber("Timer 2", state2_Timer.get());
     SmartDashboard.putNumber("shooter speed", shooter_motor1.getSelectedSensorVelocity());
-    SmartDashboard.putBoolean("SPEED OK", ((shooter_motor1.getSelectedSensorVelocity() > (shooter_setpoint - 300)) && (shooter_motor1.getSelectedSensorVelocity() < shooter_setpoint + 300)));
+    SmartDashboard.putBoolean("SPEED OK", ((shooter_motor1.getSelectedSensorVelocity() > (shooter_setpoint - 500)) && (shooter_motor1.getSelectedSensorVelocity() < shooter_setpoint + 500)));
     
     tx_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0);
     ty_angle = NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0);
@@ -254,10 +260,7 @@ public class Robot extends TimedRobot {
     * Start (button 8) = Move Intake Down
     * Left Bumper (button 5) = Perform Auto
     **/
-
-        //If Driver is controlling, don't auto aim, but if driver presses button they are forced to switch to auto aiming
         //distanceHaptic(driver_joystick);
-
         if (driver_joystick.getRawButton(6)){
           autoAim();
         }
@@ -265,7 +268,6 @@ public class Robot extends TimedRobot {
            //newDrive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxis(5));
            newDrive2(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
         }
-
         
         expelCargo(copilot_joystick, 2); // b hold
         flyWheelToggle(copilot_joystick, 6); // right bumper toggle
@@ -273,8 +275,6 @@ public class Robot extends TimedRobot {
         intakeCargo(copilot_joystick, 2); // left trigger
         stopCargo(copilot_joystick, 5); // left bumper
 
-
-        //autoShoot(); //shoot
         climberManualAdjustment(copilot_joystick);
         climberTest2();
         if (copilot_joystick.getRawButton(7) && copilot_joystick.getRawButton(3)){
@@ -289,8 +289,6 @@ public class Robot extends TimedRobot {
           part4ClimbTraversal();
           part5ClimbTraversal();        
         }
-        
-
   }
 
   @Override
@@ -489,7 +487,7 @@ public class Robot extends TimedRobot {
     if (intake_status == Intake_Deployment_State.up) {
       intake_motor1.set(0);
       conveyer1.set(0);
-      //shooter_motor1.set(0);
+      shooter_motor1.set(0);
       IntakeSolenoid.set(Value.kReverse);
       intake_status = Intake_Deployment_State.down;
     }
@@ -638,7 +636,7 @@ public class Robot extends TimedRobot {
     if (intake_status == Intake_Deployment_State.down) {
       intake_motor1.set(0);
       conveyer1.set(0);
-      //shooter_motor1.set(0);
+      shooter_motor1.set(0);
       IntakeSolenoid.set(Value.kForward);
       intake_status = Intake_Deployment_State.up;
     }  
@@ -720,6 +718,7 @@ public class Robot extends TimedRobot {
       moveIntakeUptoDown();
       intake_motor1.set(0.8);
       conveyer1.set(-0.8);
+      shooter_motor1.set(-0.1);
     }
   }
 
@@ -752,9 +751,10 @@ public class Robot extends TimedRobot {
   }
   void shootCargo(Joystick controller, int axis){
     if ((controller.getRawAxis(axis) >= 0.5)){
+      if ((shooter_motor1.getSelectedSensorVelocity() > (shooter_setpoint - 500)) && (shooter_motor1.getSelectedSensorVelocity() < shooter_setpoint + 500)) {
       //if ((shooter_motor1.getSelectedSensorVelocity() > 17500) && (shooter_motor1.getSelectedSensorVelocity() < 18500)){ //drive team velocity control for teleop (currently commented out)
         conveyer1.set(0.8);
-      //}
+      }
     }
   }
   
@@ -912,9 +912,13 @@ public class Robot extends TimedRobot {
   }
 
   void newDrive2(double leftControl, double rightControl) {
+    if (Math.abs(leftControl) < 0.07) {
+      leftControl = 0.0;
+    }
+    if (Math.abs(rightControl) < 0.07) {
+      rightControl = 0.0;
+    }    
     driver_leftmotor1.set(leftControl);
-    driver_rightmotor1.set(rightControl);
+    driver_rightmotor1.set(rightControl); 
   }
-
-
 }
