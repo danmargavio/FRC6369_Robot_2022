@@ -69,7 +69,7 @@ public class Robot extends TimedRobot {
   private final double goalHeight = 104; //inches above the ground to the top of the goal
   private final double goalRadius = 26.7716535; //inches 
   private final double pupilDistanceToShooter = -6; //inches, in relation to distance from goal ||
-  private final double desiredDistanceFromGoal = 150; //inches, distance from the shooter to the center of goal (114.75in - 24in) ||
+  private final double desiredDistanceFromGoal = 150; //inches, distance from the shooter to the center of goal (114.75in - 24in) || //drive team distance from goal
   private final double minimum_climber_limit = -850000; // this is the absolute minimum safe climber arm rotation limit
   private final double maximum_climber_limit = 28500; // this is the absolute maximum safe climber arm rotation limit
   private final double hapticFeedbackPercent = 0.0;
@@ -197,7 +197,7 @@ public class Robot extends TimedRobot {
       intake_motor1.set(-0.8);
     }
     // Dan added the below, in case we have limelight problems, this will prevent us from crashing into wall and turn off the motors
-    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (state4_Timer.get() > 8.0)) {
+    else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (state4_Timer.get() > 8.0)) { //drive team 8.0 is how long it goes back for
       state4_Timer.stop();
       newDrive(0, 0);
       intake_motor1.set(0.0);
@@ -211,7 +211,7 @@ public class Robot extends TimedRobot {
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) {
       shooter_motor1.set(0.9);
-      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) {
+      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) { //drive team velocity control for autonomous
         state4_Timer.reset();
         state4_Timer.start();
         cargo_status = Robot_Cargo_State.Cargo_being_shot;
@@ -752,7 +752,7 @@ public class Robot extends TimedRobot {
   }
   void shootCargo(Joystick controller, int axis){
     if ((controller.getRawAxis(axis) >= 0.5)){
-      //if ((shooter_motor1.getSelectedSensorVelocity() > 17500) && (shooter_motor1.getSelectedSensorVelocity() < 18500)){
+      //if ((shooter_motor1.getSelectedSensorVelocity() > 17500) && (shooter_motor1.getSelectedSensorVelocity() < 18500)){ //drive team velocity control for teleop (currently commented out)
         conveyer1.set(0.8);
       //}
     }
