@@ -75,7 +75,7 @@ public class Robot extends TimedRobot {
   private final double hapticFeedbackPercent = 0.0;
   private boolean button_toggle_1 = false;
   private double shooter_setpoint = 16250;
-  private double outputValue = -1;
+  private double outputValue = -1; //controlls % of speed 
   @Override
   public void robotInit() {
     System.out.println("==========================");
@@ -240,7 +240,7 @@ public class Robot extends TimedRobot {
   public void teleopInit() {
     cargo_status = Robot_Cargo_State.Idle;
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("ledMode").setNumber(3);
-    outputValue = -0.25;
+    outputValue = -1; //controlls % of speed 
   }
 
   @Override
