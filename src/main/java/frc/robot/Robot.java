@@ -75,7 +75,7 @@ public class Robot extends TimedRobot {
   private final double hapticFeedbackPercent = 0.0;
   private boolean button_toggle_1 = false;
   private double shooter_setpoint = 16250;
-  private double outputValue = -1; //controlls % of speed 
+  
   @Override
   public void robotInit() {
     System.out.println("==========================");
@@ -200,7 +200,7 @@ public class Robot extends TimedRobot {
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (camAngletoDistance(ty_angle) <= desiredDistanceFromGoal)) {
       //tarzan_robot.tankDrive(0.4, 0.4);
       newDrive(10000, 10000);
-      intake_motor1.set(-0.8);
+      intake_motor1.set(0.8);
     }
     // Dan added the below, in case we have limelight problems, this will prevent us from crashing into wall and turn off the motors
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (state4_Timer.get() > 8.0)) { //drive team 8.0 is how long it goes back for
@@ -224,8 +224,10 @@ public class Robot extends TimedRobot {
       }
     }
     else if (cargo_status == Robot_Cargo_State.Cargo_being_shot) {
-      conveyer1.set(0.8); //running conveyer 
-      intake_motor1.set(-0.8);
+      if ((shooter_motor1.getSelectedSensorVelocity() >= 17500) && (shooter_motor1.getSelectedSensorVelocity() <= 18500)) { //drive team velocity control for autonomous
+        conveyer1.set(1.0);
+      }
+      intake_motor1.set(0.8);
       if (state4_Timer.get() > 10.0){
         conveyer1.set(0);
         intake_motor1.set(0);
@@ -240,7 +242,6 @@ public class Robot extends TimedRobot {
   public void teleopInit() {
     cargo_status = Robot_Cargo_State.Idle;
     NetworkTableInstance.getDefault().getTable("limelight").getEntry("ledMode").setNumber(3);
-    outputValue = -1; //controlls % of speed 
   }
 
   @Override
@@ -266,8 +267,8 @@ public class Robot extends TimedRobot {
           autoAim();
         }
         else{
-           //newDrive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxi  (5));
-           newDrive2(outputValue*driver_joystick.getRawAxis(1), outputValue*driver_joystick.getRawAxis(5));
+           //newDrive(-40000*driver_joystick.getRawAxis(1), -40000*driver_joystick.getRawAxis(5));
+           newDrive2(-1*driver_joystick.getRawAxis(1), -1*driver_joystick.getRawAxis(5));
         }
         
         expelCargo(copilot_joystick, 2); // b hold
@@ -338,7 +339,7 @@ public class Robot extends TimedRobot {
     }
 
     if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-      intake_motor1.set(-0.8); //running intake
+      intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
       if (copilot_joystick.getRawButton(5) == true){
         state2_Timer.reset();
@@ -359,7 +360,7 @@ public class Robot extends TimedRobot {
       conveyer1.set(0); //stopping conveyer
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == true)){
-      intake_motor1.set(-0.8);
+      intake_motor1.set(0.8);
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_awaiting_shooter) && (copilot_joystick.getRawButton(5) == false)){
       intake_motor1.set(0);
@@ -646,15 +647,15 @@ public class Robot extends TimedRobot {
   void autoAim() {
     if (Math.abs(tx_angle) > 10.0){
       //tarzan_robot.tankDrive(0.6*tx_angle/27, -0.6*tx_angle/27);
-      newDrive2(750*tx_angle,-750*tx_angle);
+      newDrive2(tx_angle/108,-1*tx_angle/108);
     }
-    else if ((tx_angle >0.5) && (tx_angle < 10.0)){
+    else if ((tx_angle > 1.0) && (tx_angle < 10.0)){
       //tarzan_robot.tankDrive(0.30, -0.30);
-      newDrive2(3000, -3000);
+      newDrive2(0.07, -0.07);
     }
-    else if ((tx_angle > -10) && (tx_angle <-0.5)){
+    else if ((tx_angle > -10) && (tx_angle <-1.0)){
       //tarzan_robot.tankDrive(-0.30, 0.30);
-      newDrive2(-3000, 3000);
+      newDrive2(-0.07, 0.07);
     }
     else{
       //tarzan_robot.tankDrive(0, 0);
@@ -696,7 +697,7 @@ public class Robot extends TimedRobot {
   void intakeCargo(Joystick controller, int axis){
     if (controller.getRawAxis(axis) >= 0.5){
       moveIntakeUptoDown();
-      intake_motor1.set(-0.8);
+      intake_motor1.set(0.8);
       if (conveyor_loc_1.get() == true){
         conveyer1.set(0.8);
       }
@@ -717,7 +718,7 @@ public class Robot extends TimedRobot {
   void expelCargo(Joystick controller, int button){
     if (controller.getRawButton(button) == true){
       moveIntakeUptoDown();
-      intake_motor1.set(0.8);
+      intake_motor1.set(-0.8);
       conveyer1.set(-0.8);
       shooter_motor1.set(-0.1);
     }
@@ -790,7 +791,7 @@ public class Robot extends TimedRobot {
       state2_Timer.start();
     }
     else if ((cargo_status == Robot_Cargo_State.Cargo_being_intaked) && (conveyor_loc_1.get() == true)) {
-      intake_motor1.set(-0.8); //running intake
+      intake_motor1.set(0.8); //running intake
       conveyer1.set(0.8); //running conveyer
       if (state2_Timer.get() > 4.0) {
         intake_motor1.set(0);
